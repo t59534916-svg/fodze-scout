@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0d0a07">
+<title>FODZE Scout · 3. Liga – Fußball orientierte Datenbank zur Erwartungswertsteigerung</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{background:#0d0a07;font-family:Georgia,serif;color:#e8dcc8;overflow-x:hidden}
+input[type=range]{-webkit-appearance:none;appearance:none;height:8px;border-radius:4px;outline:none;background:transparent}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:32px;height:32px;border-radius:50%;cursor:pointer;border:3px solid #0d0a07;box-shadow:0 0 8px rgba(0,0,0,.5),0 0 0 1px rgba(196,162,101,.3)}
+input[type=range]::-moz-range-thumb{width:28px;height:28px;border-radius:50%;cursor:pointer;border:3px solid #0d0a07;box-shadow:0 0 8px rgba(0,0,0,.5)}
+input[type=range].rng-home::-webkit-slider-thumb{background:linear-gradient(135deg,#6aad55,#4a8a35)}
+input[type=range].rng-home::-moz-range-thumb{background:linear-gradient(135deg,#6aad55,#4a8a35)}
+input[type=range].rng-away::-webkit-slider-thumb{background:linear-gradient(135deg,#c47070,#a04848)}
+input[type=range].rng-away::-moz-range-thumb{background:linear-gradient(135deg,#c47070,#a04848)}
+input[type=range].rng-total::-webkit-slider-thumb{background:linear-gradient(135deg,#d4b86a,#c4a265);width:36px;height:36px}
+input[type=range].rng-total::-moz-range-thumb{background:linear-gradient(135deg,#d4b86a,#c4a265);width:32px;height:32px}
+select,input,textarea{font-family:Georgia,serif}
+select optgroup{font-weight:700;color:#c4a265}
+::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:#0d0a07}::-webkit-scrollbar-thumb{background:#c4a26530;border-radius:2px}
+.page{min-height:100vh;background:linear-gradient(165deg,#0d0a07 0%,#1a150f 40%,#0f0c08 100%);padding:0 0 100px 0}
+.hdr{padding:16px;border-bottom:1px solid #c4a26515;display:flex;align-items:center;justify-content:space-between}
+.logo{font-size:18px;font-weight:800;letter-spacing:3px;background:linear-gradient(135deg,#c4a265,#d4b86a,#a08040);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.card{margin:12px;padding:16px;background:linear-gradient(145deg,#1a150f,#15110c);border:1px solid #c4a26518;border-radius:12px}
+.lbl{font-size:11px;color:#c4a26560;letter-spacing:2px;text-transform:uppercase;margin-bottom:10px}
+.sel{width:100%;padding:10px 12px;font-size:14px;background:#0d0a07;color:#e8dcc8;border:1px solid #c4a26530;border-radius:8px;margin-bottom:10px;outline:none}
+.inp{width:100%;padding:10px 12px;font-size:14px;background:#0d0a07;color:#e8dcc8;border:1px solid #c4a26530;border-radius:8px;margin-bottom:10px;outline:none;box-sizing:border-box}
+.ta{width:100%;padding:10px 12px;font-size:13px;background:#0d0a07;color:#e8dcc8;border:1px solid #c4a26530;border-radius:8px;margin-bottom:10px;outline:none;resize:vertical;min-height:55px;font-family:Georgia,serif;box-sizing:border-box}
+.btn{padding:10px 20px;font-size:13px;font-weight:700;border-radius:8px;border:none;cursor:pointer;letter-spacing:1px}
+.btn-p{background:linear-gradient(135deg,#c4a265,#a08040);color:#0d0a07}
+.btn-s{background:#1a150f;color:#c4a26580;border:1px solid #c4a26530}
+.xbtn{display:block;width:100%;padding:14px;margin-bottom:8px;border-radius:8px;border:1px solid #c4a26525;background:#0d0a07;color:#e8dcc8;font-size:14px;font-weight:600;cursor:pointer;text-align:left}
+.nav{position:fixed;bottom:0;left:0;right:0;padding:12px 16px;display:flex;gap:10px;background:linear-gradient(0deg,#0d0a07 60%,transparent);padding-top:28px;z-index:50}
+.tag{display:inline-flex;align-items:center;gap:5px;padding:7px 10px;border-radius:8px;cursor:pointer;font-size:12px}
+.tag-on{background:#c4a26520;border:1.5px solid #c4a265;color:#c4a265;font-weight:700}
+.tag-off{background:#0d0a07;border:1.5px solid #c4a26520;color:#c4a26560;font-weight:400}
+.toast{position:fixed;top:16px;left:50%;transform:translateX(-50%);padding:10px 20px;border-radius:8px;background:#6aad55;color:#0d0a07;font-weight:700;font-size:14px;z-index:99;box-shadow:0 4px 20px rgba(106,173,85,.3);display:none}
+.copy-ok{margin-top:8px;padding:10px;border-radius:8px;background:#6aad5530;color:#6aad55;font-size:13px;font-weight:700;text-align:center;display:none}
+.subtitle{font-size:7px;color:#c4a26530;letter-spacing:.5px;margin-top:-2px}
+</style>
+</head>
+<body>
+<div id="root" class="page"></div>
+<script>
+// ─── FODZE Scout · 3. Liga ─── Vanilla JS (Zero Dependencies) ───
+var FX = {
+  31:{date:"04.04.\u201305.04.",label:"31. Spieltag (Ostern)",m:[["Rot-Weiss Essen","MSV Duisburg"],["TSV 1860 M\u00fcnchen","SV Waldhof Mannheim"],["VfL Osnabr\u00fcck","1. FC Schweinfurt 05"],["Hansa Rostock","FC Viktoria K\u00f6ln"],["TSV Havelse","Energie Cottbus"],["Alemannia Aachen","SV Wehen Wiesbaden"],["SSV Ulm 1846","SC Verl"],["1. FC Saarbr\u00fccken","FC Ingolstadt 04"],["VfB Stuttgart II","SSV Jahn Regensburg"],["Erzgebirge Aue","TSG Hoffenheim II"]]},
+  32:{date:"07.04.\u201308.04.",label:"32. ST (Engl. Woche)",m:[["Energie Cottbus","TSV 1860 M\u00fcnchen"],["MSV Duisburg","VfL Osnabr\u00fcck"],["SC Verl","Hansa Rostock"],["1. FC Saarbr\u00fccken","Alemannia Aachen"],["SV Waldhof Mannheim","TSG Hoffenheim II"],["FC Ingolstadt 04","FC Viktoria K\u00f6ln"],["SSV Jahn Regensburg","Erzgebirge Aue"],["Rot-Weiss Essen","SSV Ulm 1846"],["SV Wehen Wiesbaden","VfB Stuttgart II"],["1. FC Schweinfurt 05","TSV Havelse"]]},
+  33:{date:"10.04.\u201312.04.",label:"33. Spieltag",m:[["Hansa Rostock","SSV Ulm 1846"],["TSV Havelse","1. FC Saarbr\u00fccken"],["Alemannia Aachen","VfB Stuttgart II"],["Rot-Weiss Essen","FC Ingolstadt 04"],["TSV 1860 M\u00fcnchen","SSV Jahn Regensburg"],["VfL Osnabr\u00fcck","Energie Cottbus"],["TSG Hoffenheim II","1. FC Schweinfurt 05"],["FC Viktoria K\u00f6ln","SC Verl"],["Erzgebirge Aue","SV Wehen Wiesbaden"],["MSV Duisburg","SV Waldhof Mannheim"]]},
+  34:{date:"17.04.\u201319.04.",label:"34. Spieltag",m:[["1. FC Saarbr\u00fccken","TSV 1860 M\u00fcnchen"],["FC Ingolstadt 04","VfL Osnabr\u00fcck"],["VfB Stuttgart II","Erzgebirge Aue"],["SSV Ulm 1846","TSV Havelse"],["SV Waldhof Mannheim","Energie Cottbus"],["SV Wehen Wiesbaden","FC Viktoria K\u00f6ln"],["SSV Jahn Regensburg","MSV Duisburg"],["Hansa Rostock","Rot-Weiss Essen"],["1. FC Schweinfurt 05","Alemannia Aachen"],["SC Verl","TSG Hoffenheim II"]]},
+  35:{date:"24.04.\u201326.04.",label:"35. Spieltag",m:[["Hansa Rostock","Rot-Weiss Essen"],["Alemannia Aachen","TSV 1860 M\u00fcnchen"],["SC Verl","VfL Osnabr\u00fcck"],["TSG Hoffenheim II","Energie Cottbus"],["TSV Havelse","Erzgebirge Aue"],["FC Ingolstadt 04","SV Wehen Wiesbaden"],["SSV Ulm 1846","MSV Duisburg"],["FC Viktoria K\u00f6ln","VfB Stuttgart II"],["SSV Jahn Regensburg","1. FC Schweinfurt 05"],["SV Waldhof Mannheim","1. FC Saarbr\u00fccken"]]},
+  36:{date:"01.05.\u201303.05.",label:"36. Spieltag",m:[["Erzgebirge Aue","VfL Osnabr\u00fcck"],["Energie Cottbus","SC Verl"],["1. FC Saarbr\u00fccken","1. FC Schweinfurt 05"],["TSV 1860 M\u00fcnchen","FC Ingolstadt 04"],["MSV Duisburg","SV Wehen Wiesbaden"],["Alemannia Aachen","SV Waldhof Mannheim"],["Rot-Weiss Essen","VfB Stuttgart II"],["FC Viktoria K\u00f6ln","TSV Havelse"],["SSV Jahn Regensburg","SSV Ulm 1846"],["Hansa Rostock","TSG Hoffenheim II"]]},
+  37:{date:"08.05.\u201310.05.",label:"37. Spieltag",m:[["Energie Cottbus","Hansa Rostock"],["SV Waldhof Mannheim","Rot-Weiss Essen"],["Erzgebirge Aue","TSV 1860 M\u00fcnchen"],["SSV Jahn Regensburg","VfL Osnabr\u00fcck"],["1. FC Saarbr\u00fccken","SV Wehen Wiesbaden"],["MSV Duisburg","FC Ingolstadt 04"],["TSV Havelse","SC Verl"],["1. FC Schweinfurt 05","Alemannia Aachen"],["TSG Hoffenheim II","VfB Stuttgart II"],["FC Viktoria K\u00f6ln","SSV Ulm 1846"]]},
+  38:{date:"16.05.2026",label:"38. ST (Finale 13:30)",m:[["1. FC Saarbr\u00fccken","Hansa Rostock"],["TSV 1860 M\u00fcnchen","TSV Havelse"],["VfL Osnabr\u00fcck","FC Viktoria K\u00f6ln"],["SV Wehen Wiesbaden","Energie Cottbus"],["Rot-Weiss Essen","FC Ingolstadt 04"],["SV Waldhof Mannheim","MSV Duisburg"],["Alemannia Aachen","SC Verl"],["SSV Ulm 1846","VfB Stuttgart II"],["1. FC Schweinfurt 05","Erzgebirge Aue"],["TSG Hoffenheim II","SSV Jahn Regensburg"]]}
+};
+var CURRENT_MD = "31"; // VOR JEDEM SPIELTAG ANPASSEN
+var CURRENT_FX = FX[parseInt(CURRENT_MD)];
+
+var KITS = {
+  "Rot-Weiss Essen":{bg:"#d42b2b",sleeve:"#fff",pattern:"sleeve"},
+  "MSV Duisburg":{bg:"#fff",sleeve:"#fff",accent:"#1a5ba5",pattern:"hstripes"},
+  "TSV 1860 M\u00fcnchen":{bg:"#6cb4e8",sleeve:"#6cb4e8",accent:"#fff",pattern:"vstripes"},
+  "SV Waldhof Mannheim":{bg:"#2266bb",sleeve:"#2266bb",accent:"#111",pattern:"vstripes"},
+  "VfL Osnabr\u00fcck":{bg:"#7b3fa0",sleeve:"#7b3fa0",accent:"#fff",pattern:"plain"},
+  "1. FC Schweinfurt 05":{bg:"#2d8c46",sleeve:"#2d8c46",accent:"#fff",pattern:"plain"},
+  "Hansa Rostock":{bg:"#2255aa",sleeve:"#fff",accent:"#fff",pattern:"sleeve"},
+  "FC Viktoria K\u00f6ln":{bg:"#cc2233",sleeve:"#cc2233",accent:"#111",pattern:"plain"},
+  "TSV Havelse":{bg:"#cc2020",sleeve:"#cc2020",accent:"#fff",pattern:"plain"},
+  "Energie Cottbus":{bg:"#cc1111",sleeve:"#cc1111",accent:"#fff",pattern:"hstripe1"},
+  "Alemannia Aachen":{bg:"#e8c820",sleeve:"#e8c820",accent:"#111",pattern:"vstripes"},
+  "SV Wehen Wiesbaden":{bg:"#cc1111",sleeve:"#cc1111",accent:"#111",pattern:"vstripes"},
+  "SSV Ulm 1846":{bg:"#fff",sleeve:"#fff",accent:"#111",pattern:"vstripes"},
+  "SC Verl":{bg:"#f0f0f0",sleeve:"#f0f0f0",accent:"#222",pattern:"plain"},
+  "1. FC Saarbr\u00fccken":{bg:"#2244aa",sleeve:"#2244aa",accent:"#111",pattern:"vstripes"},
+  "FC Ingolstadt 04":{bg:"#cc1122",sleeve:"#111",accent:"#111",pattern:"sleeve"},
+  "VfB Stuttgart II":{bg:"#fff",sleeve:"#fff",accent:"#cc1111",pattern:"brustring"},
+  "SSV Jahn Regensburg":{bg:"#f8f8f8",sleeve:"#f8f8f8",accent:"#cc2222",pattern:"shoulder"},
+  "Erzgebirge Aue":{bg:"#7040a0",sleeve:"#7040a0",accent:"#fff",pattern:"plain"},
+  "TSG Hoffenheim II":{bg:"#1166cc",sleeve:"#1166cc",accent:"#fff",pattern:"diagonal"}
+};
+
+var TAGS = [
+  {id:"relegation_battle",label:"Abstiegskampf",icon:"\ud83d\udd3b",desc:"Platz 15-18"},
+  {id:"promotion_race",label:"Aufstiegsrennen",icon:"\ud83d\udd3a",desc:"Platz 1-3"},
+  {id:"derby",label:"Derby",icon:"\ud83d\udd25",desc:"Lokalrivalit\u00e4t"},
+  {id:"key_player_out",label:"Schl\u00fcsselspieler fehlt",icon:"\ud83d\ude91",desc:"Top-Scorer/Kapit\u00e4n"},
+  {id:"home_fortress",label:"Heim-Festung",icon:"\ud83c\udff0",desc:">70% Heim-Siege"},
+  {id:"away_weak",label:"Ausw\u00e4rts-schwach",icon:"\ud83d\udcc9",desc:"<20% Ausw\u00e4rts-Siege"},
+  {id:"momentum_positive",label:"Positive Serie",icon:"\ud83d\udcc8",desc:"4+ ungeschlagen"},
+  {id:"momentum_negative",label:"Negative Serie",icon:"\ud83d\udc80",desc:"4+ ohne Sieg"},
+  {id:"goal_drought",label:"Tor-Flaute",icon:"\ud83c\udfdc\ufe0f",desc:"\u22641 Tor in 3 Sp."},
+  {id:"defensive_crisis",label:"Defensiv-Krise",icon:"\ud83d\udd73\ufe0f",desc:"\u22658 Gegen in 3 Sp."},
+  {id:"new_coach_bounce",label:"Neuer Trainer",icon:"\ud83c\udd95",desc:"Letzte 4 Wochen"},
+  {id:"fixture_congestion",label:"Engl. Woche",icon:"\u23f0",desc:"Spiel in 3 Tagen"}
+];
+
+var MG = [
+  {l:"1X2",m:["Heim","Unentschieden","Ausw\u00e4rts"]},
+  {l:"Double Chance",m:["DC 1X","DC X2","DC 12"]},
+  {l:"\u00dcber/Unter",m:["\u00dc1.5","U1.5","\u00dc2.5","U2.5","\u00dc3.5","U3.5"]},
+  {l:"BTTS",m:["BTTS Ja","BTTS Nein"]},
+  {l:"Handicap Heim",m:["Heim -0.5 AH","Heim -1.0 AH","Heim -1.5 AH","Heim -2.0 AH","Heim +0.5 AH","Heim +1.0 AH","Heim +1.5 AH"]},
+  {l:"Handicap Gast",m:["Gast -0.5 AH","Gast -1.0 AH","Gast -1.5 AH","Gast -2.0 AH","Gast +0.5 AH","Gast +1.0 AH","Gast +1.5 AH"]},
+  {l:"Halbzeit",m:["HT Heim","HT Draw","HT Gast"]},
+  {l:"Sonstige",m:["Kein Bet"]}
+];
+
+var KEY = "fodze3l";
+var FORMATIONS = ["3-4-3","3-5-2","4-2-3-1","4-3-3","4-4-2","4-5-1","5-3-2","5-4-1"];
+var STEP_LABELS = ["\u26bd Spiel","\ud83c\udfaf Tore","\ud83c\udff7\ufe0f Tags","\ud83d\udcaa St\u00e4rke","\ud83d\udccb Taktik","\ud83d\udcb0 Wette"];
+
+// ─── State ───
+var state = {
+  step: 0, view: "form", saved: false, copyOk: false,
+  reports: [],
+  f: freshForm()
+};
+
+function freshForm(keepName) {
+  return {
+    scoutName: keepName || "", matchday: CURRENT_MD, matchDate: "",
+    homeTeam: "", awayTeam: "",
+    expectedHomeGoals: 1.2, expectedAwayGoals: 1.0, tags: [],
+    homeAttack:0, homeMidfield:0, homeDefense:0, homeMotivation:0,
+    awayAttack:0, awayMidfield:0, awayDefense:0, awayMotivation:0,
+    homeFormation:"4-4-2", awayFormation:"4-4-2", tacticalMatchup:"", keyDuel:"",
+    homeKeyAbsence:"", awayKeyAbsence:"", homeFanFactor:5,
+    tendency:"", tendencyConfidence:3,
+    betRecommendation:"Kein Bet", betRecommendation2:"Kein Bet",
+    betMinOdds:"", betMinOdds2:"", betReasoning:""
+  };
+}
+
+// ─── Helpers ───
+function $(sel) { return document.querySelector(sel); }
+function el(tag, attrs, children) {
+  var e = document.createElement(tag);
+  if (attrs) Object.keys(attrs).forEach(function(k) {
+    if (k === "style" && typeof attrs[k] === "object") {
+      Object.keys(attrs[k]).forEach(function(s) { e.style[s] = attrs[k][s]; });
+    } else if (k === "className") { e.className = attrs[k]; }
+    else if (k.indexOf("on") === 0) { e.addEventListener(k.slice(2).toLowerCase(), attrs[k]); }
+    else { e.setAttribute(k, attrs[k]); }
+  });
+  if (children != null) {
+    if (Array.isArray(children)) children.forEach(function(c) { if (c != null) e.appendChild(typeof c === "string" ? document.createTextNode(c) : c); });
+    else if (typeof children === "string") e.textContent = children;
+    else e.appendChild(children);
+  }
+  return e;
+}
+
+function svgEl(tag, attrs) {
+  var e = document.createElementNS("http://www.w3.org/2000/svg", tag);
+  if (attrs) Object.keys(attrs).forEach(function(k) { e.setAttribute(k, attrs[k]); });
+  return e;
+}
+
+function kitSVG(team, size) {
+  size = size || 20;
+  var k = KITS[team] || {bg:"#888",sleeve:"#888",accent:"#fff",pattern:"plain"};
+  var w = size, h = Math.round(size * 1.15);
+  var body = "M"+(w*.15)+","+(h*.35)+" L"+(w*.05)+","+(h*.15)+" L"+(w*.25)+","+(h*.05)+" L"+(w*.38)+","+(h*.18)+" L"+(w*.5)+","+(h*.12)+" L"+(w*.62)+","+(h*.18)+" L"+(w*.75)+","+(h*.05)+" L"+(w*.95)+","+(h*.15)+" L"+(w*.85)+","+(h*.35)+" L"+(w*.82)+","+(h*.95)+" L"+(w*.18)+","+(h*.95)+" Z";
+  var sleeveL = "M"+(w*.15)+","+(h*.35)+" L"+(w*.05)+","+(h*.15)+" L"+(w*.25)+","+(h*.05)+" L"+(w*.38)+","+(h*.18)+" Z";
+  var sleeveR = "M"+(w*.85)+","+(h*.35)+" L"+(w*.95)+","+(h*.15)+" L"+(w*.75)+","+(h*.05)+" L"+(w*.62)+","+(h*.18)+" Z";
+  var svg = svgEl("svg", {width:w, height:h, viewBox:"0 0 "+w+" "+h});
+  svg.style.flexShrink = "0";
+  var bodyPath = svgEl("path", {d:body, fill:k.bg, stroke:"#c4a26530", "stroke-width":"0.5"});
+  svg.appendChild(bodyPath);
+  var p = k.pattern, a = k.accent || "#fff";
+  if (p === "sleeve") {
+    var sl = svgEl("path", {d:sleeveL, fill:k.sleeve, opacity:"0.9"});
+    var sr = svgEl("path", {d:sleeveR, fill:k.sleeve, opacity:"0.9"});
+    svg.appendChild(sl); svg.appendChild(sr);
+  }
+  if (p === "vstripes") [.30,.45,.60].forEach(function(x) { svg.appendChild(svgEl("line", {x1:w*x, y1:h*.18, x2:w*x, y2:h*.92, stroke:a, "stroke-width":"1.5", "stroke-opacity":"0.7"})); });
+  if (p === "hstripes") [.35,.50,.65,.80].forEach(function(y) { svg.appendChild(svgEl("line", {x1:w*.2, y1:h*y, x2:w*.8, y2:h*y, stroke:a, "stroke-width":"1.8", "stroke-opacity":"0.7"})); });
+  if (p === "hstripe1") svg.appendChild(svgEl("line", {x1:w*.2, y1:h*.45, x2:w*.8, y2:h*.45, stroke:a, "stroke-width":"3", "stroke-opacity":"0.8"}));
+  if (p === "brustring") svg.appendChild(svgEl("path", {d:"M"+(w*.18)+","+(h*.38)+" Q"+(w*.5)+","+(h*.32)+" "+(w*.82)+","+(h*.38)+" L"+(w*.82)+","+(h*.48)+" Q"+(w*.5)+","+(h*.42)+" "+(w*.18)+","+(h*.48)+" Z", fill:a, opacity:"0.85"}));
+  if (p === "shoulder") {
+    svg.appendChild(svgEl("path", {d:sleeveL, fill:a, opacity:"0.6"}));
+    svg.appendChild(svgEl("path", {d:sleeveR, fill:a, opacity:"0.6"}));
+  }
+  if (p === "diagonal") svg.appendChild(svgEl("line", {x1:w*.15, y1:h*.7, x2:w*.85, y2:h*.25, stroke:a, "stroke-width":"3", "stroke-opacity":"0.5"}));
+  return svg;
+}
+
+// ─── Persistence ───
+function loadReports() { try { var d = localStorage.getItem(KEY); if (d) state.reports = JSON.parse(d); } catch(e) {} }
+function persist() { try { localStorage.setItem(KEY, JSON.stringify(state.reports)); } catch(e) {} }
+
+// ─── Export ───
+function buildExport(reps) {
+  return reps.map(function(r) {
+    var t = "\u26bd " + r.homeTeam + " vs " + r.awayTeam + "\n";
+    t += "\ud83d\udcc5 ST " + r.matchday + " | " + (r.matchDate || "") + "\n";
+    t += "\ud83c\udfaf Erwartete Tore: " + r.expectedHomeGoals.toFixed(1) + " : " + r.expectedAwayGoals.toFixed(1) + "\n";
+    if (r.tags && r.tags.length) t += "\ud83c\udff7\ufe0f " + r.tags.join(", ") + "\n";
+    t += "\ud83d\udcaa Heim: Ang=" + r.homeAttack + " MF=" + r.homeMidfield + " Def=" + r.homeDefense + " Mot=" + r.homeMotivation + "\n";
+    t += "\ud83d\udcaa Gast: Ang=" + r.awayAttack + " MF=" + r.awayMidfield + " Def=" + r.awayDefense + " Mot=" + r.awayMotivation + "\n";
+    if (r.homeFormation) t += "\ud83d\udccb " + r.homeFormation + " vs " + r.awayFormation + "\n";
+    if (r.tacticalMatchup) t += "\ud83d\udccb " + r.tacticalMatchup + "\n";
+    if (r.keyDuel) t += "\u2694\ufe0f " + r.keyDuel + "\n";
+    if (r.homeKeyAbsence) t += "\ud83d\ude91 Heim: " + r.homeKeyAbsence + "\n";
+    if (r.awayKeyAbsence) t += "\ud83d\ude91 Gast: " + r.awayKeyAbsence + "\n";
+    t += "\ud83d\udcca Tendenz: " + (r.tendency==="H"?"Heim":r.tendency==="D"?"Draw":"Gast") + " (" + r.tendencyConfidence + "/5)\n";
+    if (r.betRecommendation !== "Kein Bet") t += "\ud83d\udcb0 Bet: " + r.betRecommendation + (r.betMinOdds ? " @" + r.betMinOdds + "+" : "") + "\n";
+    if (r.betRecommendation2 && r.betRecommendation2 !== "Kein Bet") t += "\ud83d\udcb0 Bet2: " + r.betRecommendation2 + (r.betMinOdds2 ? " @" + r.betMinOdds2 + "+" : "") + "\n";
+    if (r.betReasoning) t += "\ud83d\udcac " + r.betReasoning + "\n";
+    return t;
+  }).join("\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n\n");
+}
+
+function doExport(mode) {
+  var reps = state.reports;
+  if (!reps.length) { alert("Keine Reports vorhanden."); return; }
+  if (mode === "json") {
+    navigator.clipboard.writeText(JSON.stringify(reps, null, 2)).then(function() { flashCopy(); }).catch(function() { alert("Kopieren fehlgeschlagen"); });
+  } else if (mode === "text") {
+    navigator.clipboard.writeText("FODZE Scout Reports\n" + new Date().toLocaleDateString("de") + "\n\n" + buildExport(reps)).then(function() { flashCopy(); }).catch(function() { alert("Kopieren fehlgeschlagen"); });
+  } else if (mode === "whatsapp") {
+    window.open("https://wa.me/?text=" + encodeURIComponent("FODZE Scout 3.Liga\n\n" + buildExport(reps)), "_blank");
+  } else if (mode === "telegram") {
+    window.open("https://t.me/share/url?text=" + encodeURIComponent("FODZE Scout 3.Liga\n\n" + buildExport(reps)), "_blank");
+  } else if (mode === "email") {
+    window.open("mailto:?subject=" + encodeURIComponent("FODZE Scout Reports " + new Date().toLocaleDateString("de")) + "&body=" + encodeURIComponent(buildExport(reps)));
+  } else if (mode === "file") {
+    var blob = new Blob([JSON.stringify(reps, null, 2)], {type:"application/json"});
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a"); a.href = url; a.download = "fodze_scout_" + new Date().toISOString().slice(0,10) + ".json";
+    a.click(); URL.revokeObjectURL(url);
+  }
+}
+
+function flashCopy() { state.copyOk = true; render(); setTimeout(function() { state.copyOk = false; render(); }, 2000); }
+function flashSaved() { state.saved = true; render(); setTimeout(function() { state.saved = false; render(); }, 2500); }
+
+// ─── Header ───
+function renderHeader(extra) {
+  var hdr = el("div", {className:"hdr"});
+  var left = el("div");
+  left.appendChild(el("div", {className:"logo"}, "FODZE"));
+  left.appendChild(el("div", {className:"subtitle"}, "Fu\u00dfball orientierte Datenbank zur Erwartungswertsteigerung"));
+  if (extra) left.appendChild(extra);
+  hdr.appendChild(left);
+  return hdr;
+}
+
+// ─── Bet Select ───
+function betSelect(val, onChange) {
+  var sel = el("select", {className:"sel", onChange: function(e) { onChange(e.target.value); }});
+  MG.forEach(function(g) {
+    var og = el("optgroup", {label: g.l});
+    g.m.forEach(function(m) {
+      var opt = el("option", {value: m}, m);
+      if (m === val) opt.selected = true;
+      og.appendChild(opt);
+    });
+    sel.appendChild(og);
+  });
+  return sel;
+}
+
+// ─── Dots ───
+function renderDots(label, value, color, max, onChange) {
+  max = max || 10;
+  var wrap = el("div", {style:{marginBottom:"12px"}});
+  wrap.appendChild(el("div", {style:{fontSize:"11px",color:"#c4a26580",marginBottom:"4px",letterSpacing:"1px"}}, label));
+  var row = el("div", {style:{display:"flex",gap:"3px",alignItems:"center",flexWrap:"wrap"}});
+  for (var i = 0; i < max; i++) {
+    (function(idx) {
+      var on = idx < value;
+      var dot = el("div", {
+        style:{width:"28px",height:"28px",borderRadius:"50%",background:on?color:"#1a150f",border:"1.5px solid "+(on?color:"#c4a26525"),cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"10px",color:on?"#0d0a07":"#c4a26530",fontWeight:"700"},
+        onClick: function() { onChange(idx+1); }
+      }, String(idx+1));
+      row.appendChild(dot);
+    })(i);
+  }
+  row.appendChild(el("span", {style:{fontSize:"14px",color:color,fontWeight:"700",marginLeft:"4px"}}, value ? String(value) : "\u2013"));
+  wrap.appendChild(row);
+  return wrap;
+}
+
+// ─── Slider ───
+function renderSlider(label, value, tc, cls, onChange) {
+  var wrap = el("div", {style:{marginBottom:"16px"}});
+  var top = el("div", {style:{display:"flex",justifyContent:"space-between",alignItems:"baseline",marginBottom:"6px"}});
+  top.appendChild(el("span", {style:{fontSize:"12px",color:"#c4a26580",letterSpacing:"1px"}}, label));
+  top.appendChild(el("span", {style:{fontSize:"28px",fontWeight:"800",color:tc,fontFamily:"Georgia,serif"}}, value.toFixed(1)));
+  wrap.appendChild(top);
+  var track = el("div", {style:{position:"relative",height:"32px",display:"flex",alignItems:"center"}});
+  var pct = Math.round(value / 3.5 * 100);
+  track.appendChild(el("div", {style:{position:"absolute",left:"0",right:"0",height:"8px",borderRadius:"4px",background:"#c4a26515"}}));
+  track.appendChild(el("div", {style:{position:"absolute",left:"0",height:"8px",borderRadius:"4px",background:"linear-gradient(90deg,"+tc+"80,"+tc+")",width:pct+"%",transition:"width 0.1s"}}));
+  var inp = el("input", {type:"range", min:"0", max:"3.5", step:"0.1", value:value, className:cls, style:{width:"100%",position:"relative",zIndex:"2",background:"transparent",margin:"0"}});
+  inp.addEventListener("input", function(e) { onChange(parseFloat(e.target.value)); });
+  track.appendChild(inp);
+  wrap.appendChild(track);
+  var ticks = el("div", {style:{display:"flex",justifyContent:"space-between",marginTop:"4px"}});
+  [0,0.5,1.0,1.5,2.0,2.5,3.0,3.5].forEach(function(m) {
+    var s = el("span", {style:{fontSize:"9px",color:value>=m-0.05?tc+"80":"#c4a26530",cursor:"pointer",fontWeight:value>=m-0.05&&value<m+0.05?"700":"400"}, onClick:function(){onChange(m);}}, m.toFixed(1));
+    ticks.appendChild(s);
+  });
+  wrap.appendChild(ticks);
+  return wrap;
+}
+
+// ─── Main Render ───
+function render() {
+  var root = document.getElementById("root");
+  root.innerHTML = "";
+  var f = state.f;
+
+  if (state.view === "export") return renderExport(root);
+  if (state.view === "history") return renderHistory(root);
+  renderForm(root);
+}
+
+// ─── Export View ───
+function renderExport(root) {
+  var hdr = renderHeader();
+  var right = el("button", {className:"btn btn-s", onClick:function(){state.view="form";render();}}, "\u2190 Zur\u00fcck");
+  hdr.appendChild(right);
+  root.appendChild(hdr);
+
+  var card = el("div", {className:"card"});
+  card.appendChild(el("div", {className:"lbl"}, "REPORTS SENDEN (" + state.reports.length + ")"));
+  card.appendChild(el("p", {style:{fontSize:"12px",color:"#c4a26570",marginBottom:"16px",lineHeight:"1.5"}}, "W\u00e4hle wie du die Reports an uns schicken willst. Die Daten bleiben auch hier auf deinem Ger\u00e4t gespeichert."));
+  [["whatsapp","\ud83d\udcf1 Per WhatsApp senden"],["telegram","\u2708\ufe0f Per Telegram senden"],["email","\ud83d\udce7 Per E-Mail senden"],["text","\ud83d\udccb Als Text kopieren"],["json","{ } Als JSON kopieren (f\u00fcr Engine)"],["file","\ud83d\udcbe Als .json Datei speichern"]].forEach(function(x) {
+    card.appendChild(el("button", {className:"xbtn", onClick:function(){doExport(x[0]);}}, x[1]));
+  });
+  if (state.copyOk) {
+    card.appendChild(el("div", {className:"copy-ok", style:{display:"block"}}, "\u2705 In Zwischenablage kopiert!"));
+  }
+  root.appendChild(card);
+
+  var prev = el("div", {className:"card"});
+  prev.appendChild(el("div", {className:"lbl"}, "VORSCHAU"));
+  prev.appendChild(el("pre", {style:{fontSize:"10px",color:"#c4a26560",whiteSpace:"pre-wrap",wordBreak:"break-word",maxHeight:"300px",overflow:"auto"}}, buildExport(state.reports)));
+  root.appendChild(prev);
+}
+
+// ─── History View ───
+function renderHistory(root) {
+  var hdr = renderHeader();
+  var btns = el("div", {style:{display:"flex",gap:"6px"}});
+  btns.appendChild(el("button", {className:"btn btn-s", onClick:function(){state.view="export";render();}}, "\ud83d\udce4 Senden"));
+  btns.appendChild(el("button", {className:"btn btn-s", onClick:function(){state.view="form";render();}}, "\u2190 Zur\u00fcck"));
+  hdr.appendChild(btns);
+  root.appendChild(hdr);
+
+  var list = el("div", {style:{padding:"12px"}});
+  list.appendChild(el("div", {className:"lbl"}, "REPORTS (" + state.reports.length + ")"));
+
+  if (!state.reports.length) {
+    list.appendChild(el("div", {style:{color:"#c4a26540",fontSize:"13px",textAlign:"center",padding:"40px"}}, "Noch keine Reports."));
+  }
+
+  state.reports.forEach(function(r) {
+    var card = el("div", {className:"card", style:{margin:"8px 0"}});
+    var top = el("div", {style:{display:"flex",justifyContent:"space-between",alignItems:"center"}});
+    var info = el("div");
+    var teamRow = el("div", {style:{fontWeight:"700",fontSize:"14px",display:"flex",alignItems:"center",gap:"4px",flexWrap:"wrap"}});
+    teamRow.appendChild(kitSVG(r.homeTeam, 14));
+    teamRow.appendChild(document.createTextNode(r.homeTeam + " "));
+    teamRow.appendChild(el("span", {style:{color:"#c4a26540"}}, "\u2013"));
+    teamRow.appendChild(document.createTextNode(" " + r.awayTeam));
+    teamRow.appendChild(kitSVG(r.awayTeam, 14));
+    info.appendChild(teamRow);
+    info.appendChild(el("div", {style:{fontSize:"10px",color:"#c4a26560"}}, "ST " + r.matchday + " \u00b7 " + r.scoutName));
+    top.appendChild(info);
+    top.appendChild(el("div", {style:{fontSize:"20px",fontWeight:"800",fontFamily:"Georgia",color:"#c4a265"}}, r.expectedHomeGoals.toFixed(1) + ":" + r.expectedAwayGoals.toFixed(1)));
+    card.appendChild(top);
+
+    var badges = el("div", {style:{display:"flex",gap:"4px",marginTop:"6px",flexWrap:"wrap"}});
+    if (r.tags) r.tags.forEach(function(t) {
+      var tg = TAGS.find(function(x){return x.id===t;});
+      if (tg) badges.appendChild(el("span", {className:"tag tag-on", style:{padding:"3px 6px",fontSize:"9px"}}, tg.icon + " " + tg.label));
+    });
+    var tc = r.tendency==="H"?"#6aad55":r.tendency==="D"?"#c4a265":"#c47070";
+    badges.appendChild(el("span", {style:{padding:"3px 6px",fontSize:"9px",borderRadius:"6px",border:"1px solid "+tc,color:tc}}, (r.tendency==="H"?"Heim":r.tendency==="D"?"Draw":"Gast")+" ("+r.tendencyConfidence+"/5)"));
+    if (r.betRecommendation !== "Kein Bet") badges.appendChild(el("span", {style:{padding:"3px 6px",fontSize:"9px",borderRadius:"6px",border:"1px solid #6aad55",color:"#6aad55"}}, "\ud83d\udcb0 " + r.betRecommendation + (r.betMinOdds ? " @"+r.betMinOdds+"+" : "")));
+    if (r.betRecommendation2 && r.betRecommendation2 !== "Kein Bet") badges.appendChild(el("span", {style:{padding:"3px 6px",fontSize:"9px",borderRadius:"6px",border:"1px solid #5a8cc4",color:"#5a8cc4"}}, "\ud83d\udcb0 " + r.betRecommendation2 + (r.betMinOdds2 ? " @"+r.betMinOdds2+"+" : "")));
+    card.appendChild(badges);
+
+    if (r.betReasoning) card.appendChild(el("div", {style:{fontSize:"10px",color:"#c4a26550",marginTop:"4px"}}, r.betReasoning));
+    var delBtn = el("button", {style:{marginTop:"6px",fontSize:"9px",color:"#c4707060",background:"none",border:"none",cursor:"pointer"}, onClick:function(){state.reports=state.reports.filter(function(x){return x.id!==r.id;});persist();render();}}, "L\u00f6schen");
+    card.appendChild(delBtn);
+    list.appendChild(card);
+  });
+  root.appendChild(list);
+
+  if (state.reports.length > 0) {
+    var nav = el("div", {className:"nav", style:{justifyContent:"center"}});
+    nav.appendChild(el("button", {className:"btn btn-p", onClick:function(){state.view="export";render();}}, "\ud83d\udce4 " + state.reports.length + " Reports senden"));
+    root.appendChild(nav);
+  }
+}
+
+// ─── Form View ───
+function renderForm(root) {
+  var f = state.f;
+  var fx = FX[parseInt(CURRENT_MD)];
+
+  // Header
+  var hdr = renderHeader(el("div", {style:{fontSize:"10px",color:"#c4a26540",letterSpacing:"1px"}}, "3. LIGA \u00b7 " + CURRENT_FX.label));
+  var btns = el("div", {style:{display:"flex",gap:"6px"}});
+  btns.appendChild(el("button", {className:"btn btn-s", onClick:function(){state.view="history";render();}}, "\ud83d\udccb " + state.reports.length));
+  btns.appendChild(el("button", {className:"btn btn-s", onClick:function(){state.view="export";render();}}, "\ud83d\udce4"));
+  btns.appendChild(el("button", {className:"btn btn-s", onClick:function(){state.f=freshForm(f.scoutName);state.step=0;state.saved=false;state.view="form";render();}}, "+ Neu"));
+  hdr.appendChild(btns);
+  root.appendChild(hdr);
+
+  // Step bar
+  var bar = el("div", {style:{display:"flex",padding:"10px 16px",gap:"3px",borderBottom:"1px solid #c4a26510"}});
+  STEP_LABELS.forEach(function(st, i) {
+    var s = el("div", {style:{flex:"1",textAlign:"center",cursor:i<=state.step?"pointer":"default"}, onClick:function(){if(i<=state.step){state.step=i;render();}}});
+    s.appendChild(el("div", {style:{height:"3px",borderRadius:"2px",background:i===state.step?"#c4a265":i<state.step?"#c4a26560":"#c4a26518"}}));
+    s.appendChild(el("div", {style:{fontSize:"8px",marginTop:"3px",color:i===state.step?"#c4a265":i<state.step?"#c4a26560":"#c4a26525"}}, st));
+    bar.appendChild(s);
+  });
+  root.appendChild(bar);
+
+  // Match header (steps 1-5)
+  if (state.step > 0 && f.homeTeam) {
+    var mh = el("div", {style:{padding:"10px 16px",textAlign:"center",borderBottom:"1px solid #c4a26510"}});
+    var hs = el("span", {style:{display:"inline-flex",alignItems:"center",gap:"5px"}});
+    hs.appendChild(kitSVG(f.homeTeam, 16));
+    hs.appendChild(el("span", {style:{fontWeight:"700",color:"#6aad55"}}, f.homeTeam));
+    mh.appendChild(hs);
+    mh.appendChild(el("span", {style:{color:"#c4a26540",margin:"0 6px"}}, "vs"));
+    var as = el("span", {style:{display:"inline-flex",alignItems:"center",gap:"5px"}});
+    as.appendChild(el("span", {style:{fontWeight:"700",color:"#c47070"}}, f.awayTeam));
+    as.appendChild(kitSVG(f.awayTeam, 16));
+    mh.appendChild(as);
+    mh.appendChild(el("div", {style:{fontSize:"9px",color:"#c4a26530"}}, "ST " + f.matchday));
+    root.appendChild(mh);
+  }
+
+  // Step content
+  var stepFns = [renderStep0, renderStep1, renderStep2, renderStep3, renderStep4, renderStep5];
+  root.appendChild(stepFns[state.step]());
+
+  // Saved toast
+  if (state.saved) {
+    var toast = el("div", {style:{position:"fixed",top:"16px",left:"50%",transform:"translateX(-50%)",padding:"10px 20px",borderRadius:"8px",background:"#6aad55",color:"#0d0a07",fontWeight:"700",fontSize:"14px",zIndex:"99",boxShadow:"0 4px 20px rgba(106,173,85,.3)"}}, "\u2705 Gespeichert!");
+    root.appendChild(toast);
+  }
+
+  // Navigation
+  var nav = el("div", {className:"nav"});
+  if (state.step > 0) nav.appendChild(el("button", {className:"btn btn-s", onClick:function(){state.step--;render();}}, "\u2190 Zur\u00fcck"));
+  nav.appendChild(el("div", {style:{flex:"1"}}));
+  var canNext = stepOk();
+  if (state.step < 5) {
+    nav.appendChild(el("button", {className:"btn btn-p", style:{opacity:canNext?"1":"0.4"}, onClick:function(){if(canNext){state.step++;render();}}}, "Weiter \u2192"));
+  } else {
+    nav.appendChild(el("button", {className:"btn btn-p", style:{opacity:f.tendency?"1":"0.4",padding:"10px 28px"}, onClick:function(){if(f.tendency)saveReport();}}, "\ud83d\udcbe Speichern"));
+  }
+  root.appendChild(nav);
+}
+
+function stepOk() {
+  if (state.step === 0) return state.f.homeTeam && state.f.awayTeam;
+  if (state.step === 5) return !!state.f.tendency;
+  return true;
+}
+
+function saveReport() {
+  var r = Object.assign({}, state.f, {id: Date.now(), createdAt: new Date().toISOString()});
+  state.reports.unshift(r);
+  persist();
+  flashSaved();
+  setTimeout(function() {
+    state.f = freshForm(state.f.scoutName);
+    state.step = 0;
+    render();
+  }, 600);
+}
+
+// ─── Step 0: Match Selection ───
+function renderStep0() {
+  var f = state.f;
+  var fx = FX[parseInt(CURRENT_MD)];
+  var card = el("div", {className:"card"});
+  var top = el("div", {style:{display:"flex",justifyContent:"space-between",alignItems:"baseline",marginBottom:"12px"}});
+  top.appendChild(el("div", {className:"lbl"}, fx.label));
+  top.appendChild(el("div", {style:{fontSize:"11px",color:"#c4a26560"}}, fx.date));
+  card.appendChild(top);
+
+  card.appendChild(el("label", {style:{fontSize:"11px",color:"#c4a26560"}}, "Dein Name"));
+  var nameInp = el("input", {className:"inp", placeholder:"Scout-Name", value:f.scoutName});
+  nameInp.addEventListener("input", function(e) { state.f.scoutName = e.target.value; });
+  card.appendChild(nameInp);
+
+  card.appendChild(el("div", {className:"lbl", style:{marginTop:"4px"}}, "SPIEL ANTIPPEN"));
+  var list = el("div", {style:{display:"flex",flexDirection:"column",gap:"5px"}});
+  var sel = f.homeTeam && f.awayTeam ? f.homeTeam + "|" + f.awayTeam : null;
+
+  fx.m.forEach(function(match, i) {
+    var h = match[0], a = match[1];
+    var k = h + "|" + a;
+    var on = sel === k;
+    var done = state.reports.some(function(r) { return r.matchday === CURRENT_MD && r.homeTeam === h && r.awayTeam === a; });
+
+    var row = el("div", {
+      style:{display:"flex",alignItems:"center",padding:"9px 10px",borderRadius:"8px",cursor:done?"default":"pointer",background:on?"#c4a26515":done?"#0d0a0799":"#0d0a07",border:"1.5px solid "+(on?"#c4a265":done?"#6aad5530":"#c4a26515"),opacity:done?"0.5":"1"},
+      onClick: function() { if (!done) { state.f.homeTeam = h; state.f.awayTeam = a; render(); } }
+    });
+
+    var left = el("div", {style:{flex:"1",display:"flex",alignItems:"center",justifyContent:"flex-end",gap:"5px"}});
+    left.appendChild(el("span", {style:{fontSize:"13px",fontWeight:on?"700":"400",color:on?"#6aad55":"#e8dcc8"}}, h));
+    left.appendChild(kitSVG(h, 18));
+    row.appendChild(left);
+
+    row.appendChild(el("div", {style:{width:"28px",textAlign:"center",fontSize:"10px",color:on?"#c4a265":"#c4a26540",fontWeight:"700"}}, done ? "\u2705" : "vs"));
+
+    var right = el("div", {style:{flex:"1",display:"flex",alignItems:"center",gap:"5px"}});
+    right.appendChild(kitSVG(a, 18));
+    right.appendChild(el("span", {style:{fontSize:"13px",fontWeight:on?"700":"400",color:on?"#c47070":"#e8dcc8"}}, a));
+    row.appendChild(right);
+
+    if (on) row.appendChild(el("div", {style:{width:"7px",height:"7px",borderRadius:"50%",background:"#c4a265",marginLeft:"6px"}}));
+    list.appendChild(row);
+  });
+  card.appendChild(list);
+
+  var doneCount = state.reports.filter(function(r){return r.matchday===CURRENT_MD;}).length;
+  card.appendChild(el("div", {style:{fontSize:"9px",color:"#c4a26530",marginTop:"6px",textAlign:"center"}}, doneCount + "/" + fx.m.length + " Reports"));
+  return card;
+}
+
+// ─── Step 1: Goals ───
+function renderStep1() {
+  var f = state.f;
+  var card = el("div", {className:"card"});
+  card.appendChild(el("div", {className:"lbl"}, "ERWARTETE TORE"));
+  var desc = el("div", {style:{fontSize:"12px",color:"#c4a26570",marginBottom:"14px",lineHeight:"1.4"}});
+  desc.innerHTML = "Wie viele Tore erwartest du?<br><span style='color:#c4a26540'>3. Liga \u00d8: ~1.25 pro Team</span>";
+  card.appendChild(desc);
+
+  card.appendChild(renderSlider(f.homeTeam || "HEIM", f.expectedHomeGoals, "#6aad55", "rng-home", function(v) { state.f.expectedHomeGoals = v; render(); }));
+  card.appendChild(renderSlider(f.awayTeam || "GAST", f.expectedAwayGoals, "#c47070", "rng-away", function(v) { state.f.expectedAwayGoals = v; render(); }));
+
+  // Total slider
+  var tot = f.expectedHomeGoals + f.expectedAwayGoals;
+  var totWrap = el("div", {style:{marginBottom:"16px"}});
+  var totTop = el("div", {style:{display:"flex",justifyContent:"space-between",alignItems:"baseline",marginBottom:"6px"}});
+  totTop.appendChild(el("span", {style:{fontSize:"12px",color:"#c4a26580",letterSpacing:"1px"}}, "TOTAL TORE"));
+  totTop.appendChild(el("span", {style:{fontSize:"28px",fontWeight:"800",color:"#d4b86a",fontFamily:"Georgia,serif"}}, tot.toFixed(1)));
+  totWrap.appendChild(totTop);
+  var totTrack = el("div", {style:{position:"relative",height:"36px",display:"flex",alignItems:"center"}});
+  var totPct = Math.round(tot / 6 * 100);
+  totTrack.appendChild(el("div", {style:{position:"absolute",left:"0",right:"0",height:"10px",borderRadius:"5px",background:"#c4a26515"}}));
+  totTrack.appendChild(el("div", {style:{position:"absolute",left:"0",height:"10px",borderRadius:"5px",background:"linear-gradient(90deg,#d4b86a60,#d4b86a)",width:totPct+"%",transition:"width 0.1s"}}));
+  var totInp = el("input", {type:"range", min:"0", max:"6", step:"0.1", value:tot, className:"rng-total", style:{width:"100%",position:"relative",zIndex:"2",background:"transparent",margin:"0"}});
+  totInp.addEventListener("input", function(e) {
+    var newT = parseFloat(e.target.value);
+    var oldT = state.f.expectedHomeGoals + state.f.expectedAwayGoals;
+    if (oldT < 0.01) { state.f.expectedHomeGoals = newT/2; state.f.expectedAwayGoals = newT/2; render(); return; }
+    var ratio = state.f.expectedHomeGoals / oldT;
+    state.f.expectedHomeGoals = Math.round(Math.min(3.5, newT * ratio) * 10) / 10;
+    state.f.expectedAwayGoals = Math.round(Math.min(3.5, newT * (1 - ratio)) * 10) / 10;
+    render();
+  });
+  totTrack.appendChild(totInp);
+  totWrap.appendChild(totTrack);
+  var totTicks = el("div", {style:{display:"flex",justifyContent:"space-between",marginTop:"4px"}});
+  [0,1,2,3,4,5,6].forEach(function(m) {
+    totTicks.appendChild(el("span", {style:{fontSize:"9px",color:tot>=m-0.05?"#d4b86a80":"#c4a26530",cursor:"pointer",fontWeight:Math.abs(tot-m)<0.15?"700":"400"}, onClick:function(){
+      var oldT = state.f.expectedHomeGoals + state.f.expectedAwayGoals;
+      var ratio = oldT > 0.01 ? state.f.expectedHomeGoals / oldT : 0.5;
+      state.f.expectedHomeGoals = Math.round(Math.min(3.5, m * ratio) * 10) / 10;
+      state.f.expectedAwayGoals = Math.round(Math.min(3.5, m * (1 - ratio)) * 10) / 10;
+      render();
+    }}, m.toFixed(1)));
+  });
+  totWrap.appendChild(totTicks);
+  totWrap.appendChild(el("div", {style:{fontSize:"10px",color:"#c4a26540",marginTop:"4px",textAlign:"center"}}, "3. Liga \u00d8: 2.6 Total \u00b7 Verschiebt proportional"));
+  card.appendChild(totWrap);
+
+  // Expected result box
+  var box = el("div", {style:{marginTop:"8px",padding:"14px",borderRadius:"8px",background:"#c4a26508",border:"1px solid #c4a26515",textAlign:"center"}});
+  box.appendChild(el("div", {style:{fontSize:"10px",color:"#c4a26540",marginBottom:"2px"}}, "ERWARTETES ERGEBNIS"));
+  var score = el("div", {style:{fontSize:"34px",fontWeight:"800",letterSpacing:"4px",fontFamily:"Georgia",background:"linear-gradient(135deg,#6aad55,#c4a265,#c47070)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}});
+  score.textContent = f.expectedHomeGoals.toFixed(1) + " : " + f.expectedAwayGoals.toFixed(1);
+  box.appendChild(score);
+  box.appendChild(el("div", {style:{fontSize:"10px",color:"#c4a26540"}}, "\u00d8 Total: " + tot.toFixed(1)));
+  card.appendChild(box);
+  return card;
+}
+
+// ─── Step 2: Tags ───
+function renderStep2() {
+  var f = state.f;
+  var card = el("div", {className:"card"});
+  card.appendChild(el("div", {className:"lbl"}, "KONTEXT-TAGS (max. 3)"));
+  card.appendChild(el("div", {style:{fontSize:"12px",color:"#c4a26560",marginBottom:"12px"}}, "Was pr\u00e4gt dieses Spiel?"));
+  var wrap = el("div", {style:{display:"flex",flexWrap:"wrap",gap:"6px"}});
+  TAGS.forEach(function(t) {
+    var on = f.tags.indexOf(t.id) !== -1;
+    var tag = el("div", {className:"tag " + (on ? "tag-on" : "tag-off"), onClick:function(){
+      var idx = state.f.tags.indexOf(t.id);
+      if (idx !== -1) state.f.tags.splice(idx, 1);
+      else if (state.f.tags.length < 3) state.f.tags.push(t.id);
+      render();
+    }});
+    tag.appendChild(el("span", null, t.icon));
+    var info = el("div");
+    info.appendChild(el("div", {style:{fontSize:"11px"}}, t.label));
+    info.appendChild(el("div", {style:{fontSize:"8px",opacity:"0.6"}}, t.desc));
+    tag.appendChild(info);
+    wrap.appendChild(tag);
+  });
+  card.appendChild(wrap);
+  if (f.tags.length === 3) card.appendChild(el("div", {style:{fontSize:"11px",color:"#c47070",marginTop:"6px"}}, "Maximum erreicht"));
+  return card;
+}
+
+// ─── Step 3: Ratings ───
+function renderStep3() {
+  var f = state.f;
+  var card = el("div", {className:"card"});
+  card.appendChild(el("div", {className:"lbl"}, f.homeTeam || "HEIM"));
+  card.appendChild(renderDots("ANGRIFF", f.homeAttack, "#6aad55", 10, function(v){state.f.homeAttack=v;render();}));
+  card.appendChild(renderDots("MITTELFELD", f.homeMidfield, "#c4a265", 10, function(v){state.f.homeMidfield=v;render();}));
+  card.appendChild(renderDots("ABWEHR", f.homeDefense, "#5a8cc4", 10, function(v){state.f.homeDefense=v;render();}));
+  card.appendChild(renderDots("MOTIVATION", f.homeMotivation, "#d4b86a", 10, function(v){state.f.homeMotivation=v;render();}));
+  card.appendChild(el("div", {className:"lbl", style:{marginTop:"16px"}}, f.awayTeam || "GAST"));
+  card.appendChild(renderDots("ANGRIFF", f.awayAttack, "#6aad55", 10, function(v){state.f.awayAttack=v;render();}));
+  card.appendChild(renderDots("MITTELFELD", f.awayMidfield, "#c4a265", 10, function(v){state.f.awayMidfield=v;render();}));
+  card.appendChild(renderDots("ABWEHR", f.awayDefense, "#5a8cc4", 10, function(v){state.f.awayDefense=v;render();}));
+  card.appendChild(renderDots("MOTIVATION", f.awayMotivation, "#d4b86a", 10, function(v){state.f.awayMotivation=v;render();}));
+  return card;
+}
+
+// ─── Step 4: Tactics ───
+function renderStep4() {
+  var f = state.f;
+  var card = el("div", {className:"card"});
+  card.appendChild(el("div", {className:"lbl"}, "TAKTIK & KONTEXT"));
+  var row = el("div", {style:{display:"flex",gap:"10px",marginBottom:"10px"}});
+  var lf = el("div", {style:{flex:"1"}});
+  lf.appendChild(el("label", {style:{fontSize:"10px",color:"#c4a26550"}}, "Formation Heim"));
+  var selH = el("select", {className:"sel"});
+  FORMATIONS.forEach(function(x) { var o = el("option", null, x); if (x===f.homeFormation) o.selected=true; selH.appendChild(o); });
+  selH.addEventListener("change", function(e){state.f.homeFormation=e.target.value;});
+  lf.appendChild(selH);
+  row.appendChild(lf);
+  var rf = el("div", {style:{flex:"1"}});
+  rf.appendChild(el("label", {style:{fontSize:"10px",color:"#c4a26550"}}, "Formation Gast"));
+  var selA = el("select", {className:"sel"});
+  FORMATIONS.forEach(function(x) { var o = el("option", null, x); if (x===f.awayFormation) o.selected=true; selA.appendChild(o); });
+  selA.addEventListener("change", function(e){state.f.awayFormation=e.target.value;});
+  rf.appendChild(selA);
+  row.appendChild(rf);
+  card.appendChild(row);
+
+  card.appendChild(el("label", {style:{fontSize:"10px",color:"#c4a26550"}}, "Taktisches Matchup"));
+  var ta = el("textarea", {className:"ta", placeholder:"z.B. Heim presst hoch, Gast kontert..."});
+  ta.value = f.tacticalMatchup; ta.addEventListener("input", function(e){state.f.tacticalMatchup=e.target.value;});
+  card.appendChild(ta);
+
+  card.appendChild(el("label", {style:{fontSize:"10px",color:"#c4a26550"}}, "Schl\u00fcsselduell"));
+  var kd = el("input", {className:"inp", placeholder:"z.B. St\u00fcrmer X vs IV Y", value:f.keyDuel});
+  kd.addEventListener("input", function(e){state.f.keyDuel=e.target.value;});
+  card.appendChild(kd);
+
+  card.appendChild(el("label", {style:{fontSize:"10px",color:"#c4a26550"}}, "Ausf\u00e4lle Heim"));
+  var ha = el("input", {className:"inp", placeholder:"z.B. Kapit\u00e4n gesperrt", value:f.homeKeyAbsence});
+  ha.addEventListener("input", function(e){state.f.homeKeyAbsence=e.target.value;});
+  card.appendChild(ha);
+
+  card.appendChild(el("label", {style:{fontSize:"10px",color:"#c4a26550"}}, "Ausf\u00e4lle Gast"));
+  var aa = el("input", {className:"inp", placeholder:"z.B. Torwart erk\u00e4ltet", value:f.awayKeyAbsence});
+  aa.addEventListener("input", function(e){state.f.awayKeyAbsence=e.target.value;});
+  card.appendChild(aa);
+
+  card.appendChild(renderDots("FAN-FAKTOR HEIM", f.homeFanFactor, "#d4b86a", 10, function(v){state.f.homeFanFactor=v;render();}));
+  return card;
+}
+
+// ─── Step 5: Bet ───
+function renderStep5() {
+  var f = state.f;
+  var card = el("div", {className:"card"});
+  card.appendChild(el("div", {className:"lbl"}, "DEINE EINSCH\u00c4TZUNG"));
+  card.appendChild(el("div", {style:{fontSize:"12px",color:"#c4a26570",marginBottom:"10px"}}, "Wer gewinnt?"));
+
+  var tendRow = el("div", {style:{display:"flex",gap:"6px",marginBottom:"16px"}});
+  [["H","\ud83c\udfe0 Heim"],["D","\ud83e\udd1d Draw"],["A","\u2708\ufe0f Gast"]].forEach(function(x) {
+    var v = x[0], l = x[1];
+    var on = f.tendency === v;
+    var col = v==="H"?"#5a8c4a":v==="D"?"#c4a265":"#c47070";
+    var tcol = v==="H"?"#6aad55":v==="D"?"#d4b86a":"#c47070";
+    tendRow.appendChild(el("div", {
+      style:{flex:"1",padding:"12px 6px",borderRadius:"8px",cursor:"pointer",textAlign:"center",fontSize:"14px",fontWeight:"700",background:on?col+"20":"#0d0a07",border:"2px solid "+(on?col:"#c4a26518"),color:on?tcol:"#c4a26540"},
+      onClick:function(){state.f.tendency=v;render();}
+    }, l));
+  });
+  card.appendChild(tendRow);
+
+  card.appendChild(el("div", {style:{fontSize:"12px",color:"#c4a26570",marginBottom:"6px"}}, "Konfidenz (1\u20135)"));
+  var confRow = el("div", {style:{display:"flex",gap:"6px",marginBottom:"16px"}});
+  for (var i = 1; i <= 5; i++) {
+    (function(v) {
+      var on = v <= f.tendencyConfidence;
+      confRow.appendChild(el("div", {
+        style:{flex:"1",padding:"8px 0",textAlign:"center",borderRadius:"8px",cursor:"pointer",background:on?"#c4a26520":"#0d0a07",border:"1.5px solid "+(on?"#c4a265":"#c4a26520"),color:on?"#c4a265":"#c4a26540",fontSize:"16px",fontWeight:"700"},
+        onClick:function(){state.f.tendencyConfidence=v;render();}
+      }, String(v)));
+    })(i);
+  }
+  card.appendChild(confRow);
+
+  card.appendChild(el("div", {className:"lbl", style:{marginTop:"16px"}}, "WETT-EMPFEHLUNG"));
+  card.appendChild(betSelect(f.betRecommendation, function(v){state.f.betRecommendation=v;render();}));
+
+  if (f.betRecommendation !== "Kein Bet") {
+    card.appendChild(el("label", {style:{fontSize:"10px",color:"#c4a26550"}}, "Minimum Quote"));
+    var moInp = el("input", {className:"inp", type:"number", step:"0.05", placeholder:"z.B. 1.80", value:f.betMinOdds});
+    moInp.addEventListener("input", function(e){state.f.betMinOdds=e.target.value;});
+    card.appendChild(moInp);
+
+    card.appendChild(el("div", {className:"lbl", style:{marginTop:"12px"}}, "2. WETTE (optional)"));
+    card.appendChild(betSelect(f.betRecommendation2 || "Kein Bet", function(v){state.f.betRecommendation2=v;render();}));
+
+    if (f.betRecommendation2 && f.betRecommendation2 !== "Kein Bet") {
+      card.appendChild(el("label", {style:{fontSize:"10px",color:"#c4a26550"}}, "Min. Quote 2. Wette"));
+      var mo2 = el("input", {className:"inp", type:"number", step:"0.05", placeholder:"z.B. 2.10", value:f.betMinOdds2||""});
+      mo2.addEventListener("input", function(e){state.f.betMinOdds2=e.target.value;});
+      card.appendChild(mo2);
+    }
+  }
+
+  card.appendChild(el("label", {style:{fontSize:"10px",color:"#c4a26550"}}, "Begr\u00fcndung"));
+  var brTa = el("textarea", {className:"ta", placeholder:"Warum diese Einsch\u00e4tzung?"});
+  brTa.value = f.betReasoning;
+  brTa.addEventListener("input", function(e){state.f.betReasoning=e.target.value;});
+  card.appendChild(brTa);
+  return card;
+}
+
+// ─── Init ───
+loadReports();
+render();
+</script>
+</body>
+</html>
