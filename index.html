@@ -294,15 +294,15 @@ function renderSlider(label, value, tc, cls, onChange) {
   top.appendChild(el("span", {style:{fontSize:"28px",fontWeight:"800",color:tc,fontFamily:"Georgia,serif"}}, value.toFixed(1)));
   wrap.appendChild(top);
   var track = el("div", {style:{position:"relative",height:"32px",display:"flex",alignItems:"center"}});
-  var pct = Math.round(value / 3.5 * 100);
+  var pct = Math.round(value / 6.5 * 100);
   track.appendChild(el("div", {style:{position:"absolute",left:"0",right:"0",height:"8px",borderRadius:"4px",background:"#c4a26515"}}));
   track.appendChild(el("div", {style:{position:"absolute",left:"0",height:"8px",borderRadius:"4px",background:"linear-gradient(90deg,"+tc+"80,"+tc+")",width:pct+"%",transition:"width 0.1s"}}));
-  var inp = el("input", {type:"range", min:"0", max:"3.5", step:"0.1", value:value, className:cls, style:{width:"100%",position:"relative",zIndex:"2",background:"transparent",margin:"0"}});
+  var inp = el("input", {type:"range", min:"0", max:"6.5", step:"0.1", value:value, className:cls, style:{width:"100%",position:"relative",zIndex:"2",background:"transparent",margin:"0"}});
   inp.addEventListener("input", function(e) { onChange(parseFloat(e.target.value)); });
   track.appendChild(inp);
   wrap.appendChild(track);
   var ticks = el("div", {style:{display:"flex",justifyContent:"space-between",marginTop:"4px"}});
-  [0,0.5,1.0,1.5,2.0,2.5,3.0,3.5].forEach(function(m) {
+  [0,1.0,2.0,3.0,4.0,5.0,6.0,6.5].forEach(function(m) {
     var s = el("span", {style:{fontSize:"9px",color:value>=m-0.05?tc+"80":"#c4a26530",cursor:"pointer",fontWeight:value>=m-0.05&&value<m+0.05?"700":"400"}, onClick:function(){onChange(m);}}, m.toFixed(1));
     ticks.appendChild(s);
   });
@@ -555,28 +555,28 @@ function renderStep1() {
   totTop.appendChild(el("span", {style:{fontSize:"28px",fontWeight:"800",color:"#d4b86a",fontFamily:"Georgia,serif"}}, tot.toFixed(1)));
   totWrap.appendChild(totTop);
   var totTrack = el("div", {style:{position:"relative",height:"36px",display:"flex",alignItems:"center"}});
-  var totPct = Math.round(tot / 6 * 100);
+  var totPct = Math.round(tot / 13 * 100);
   totTrack.appendChild(el("div", {style:{position:"absolute",left:"0",right:"0",height:"10px",borderRadius:"5px",background:"#c4a26515"}}));
   totTrack.appendChild(el("div", {style:{position:"absolute",left:"0",height:"10px",borderRadius:"5px",background:"linear-gradient(90deg,#d4b86a60,#d4b86a)",width:totPct+"%",transition:"width 0.1s"}}));
-  var totInp = el("input", {type:"range", min:"0", max:"6", step:"0.1", value:tot, className:"rng-total", style:{width:"100%",position:"relative",zIndex:"2",background:"transparent",margin:"0"}});
+  var totInp = el("input", {type:"range", min:"0", max:"13", step:"0.1", value:tot, className:"rng-total", style:{width:"100%",position:"relative",zIndex:"2",background:"transparent",margin:"0"}});
   totInp.addEventListener("input", function(e) {
     var newT = parseFloat(e.target.value);
     var oldT = state.f.expectedHomeGoals + state.f.expectedAwayGoals;
     if (oldT < 0.01) { state.f.expectedHomeGoals = newT/2; state.f.expectedAwayGoals = newT/2; render(); return; }
     var ratio = state.f.expectedHomeGoals / oldT;
-    state.f.expectedHomeGoals = Math.round(Math.min(3.5, newT * ratio) * 10) / 10;
-    state.f.expectedAwayGoals = Math.round(Math.min(3.5, newT * (1 - ratio)) * 10) / 10;
+    state.f.expectedHomeGoals = Math.round(Math.min(6.5, newT * ratio) * 10) / 10;
+    state.f.expectedAwayGoals = Math.round(Math.min(6.5, newT * (1 - ratio)) * 10) / 10;
     render();
   });
   totTrack.appendChild(totInp);
   totWrap.appendChild(totTrack);
   var totTicks = el("div", {style:{display:"flex",justifyContent:"space-between",marginTop:"4px"}});
-  [0,1,2,3,4,5,6].forEach(function(m) {
+  [0,2,4,6,8,10,13].forEach(function(m) {
     totTicks.appendChild(el("span", {style:{fontSize:"9px",color:tot>=m-0.05?"#d4b86a80":"#c4a26530",cursor:"pointer",fontWeight:Math.abs(tot-m)<0.15?"700":"400"}, onClick:function(){
       var oldT = state.f.expectedHomeGoals + state.f.expectedAwayGoals;
       var ratio = oldT > 0.01 ? state.f.expectedHomeGoals / oldT : 0.5;
-      state.f.expectedHomeGoals = Math.round(Math.min(3.5, m * ratio) * 10) / 10;
-      state.f.expectedAwayGoals = Math.round(Math.min(3.5, m * (1 - ratio)) * 10) / 10;
+      state.f.expectedHomeGoals = Math.round(Math.min(6.5, m * ratio) * 10) / 10;
+      state.f.expectedAwayGoals = Math.round(Math.min(6.5, m * (1 - ratio)) * 10) / 10;
       render();
     }}, m.toFixed(1)));
   });
