@@ -38,3 +38,12 @@ packages = ["iscout", "iscout.modules"]
 
 [tool.setuptools.package-data]
 iscout = ["data/indicators/*.json", "data/*.html"]
+
+[tool.pytest.ini_options]
+# `pytest` alone (from this directory) now works — no PYTHONPATH needed.
+# `.` exposes the iscout package for source checkouts; `samples` exposes the
+# synthetic-backup builder the end-to-end tests import.
+minversion = "7.0"
+testpaths = ["tests"]
+pythonpath = [".", "samples"]
+addopts = "-q"

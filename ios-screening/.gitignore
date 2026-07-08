@@ -15,3 +15,8 @@ venv/
 *.iscout.html
 /testdata/
 /evidence/
+
+# CI / demo scratch
+/_ci_*
+/demo-backup/
+/decrypted/

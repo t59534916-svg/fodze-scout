@@ -1,5 +1,7 @@
 # iScout — iPhone Spyware / Stalkerware Screening
 
+[![iScout tests](https://github.com/t59534916-svg/fodze-scout/actions/workflows/iscout-tests.yml/badge.svg)](https://github.com/t59534916-svg/fodze-scout/actions/workflows/iscout-tests.yml)
+
 A forensic **screening tool for Apple iPhones/iPads** that surfaces indicators of
 malware, mercenary spyware (Pegasus, Predator, Graphite, Operation Triangulation),
 consumer **stalkerware**, and covert monitoring (rogue MDM/configuration profiles,
@@ -159,9 +161,14 @@ exercised. Nothing there is real malware.
 ## Develop / test
 
 ```bash
-pip install pytest
-PYTHONPATH=. python -m pytest -q
+cd ios-screening
+pip install -e ".[dev]"      # installs iScout + pytest
+pytest                        # no PYTHONPATH needed — config is in pyproject.toml
 ```
+
+CI (GitHub Actions) runs the full suite on Python 3.9–3.12 plus a CLI smoke test
+for every change under `ios-screening/` — see
+[`.github/workflows/iscout-tests.yml`](../.github/workflows/iscout-tests.yml).
 
 ## Scope & limits
 
