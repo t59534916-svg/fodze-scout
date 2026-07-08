@@ -11,7 +11,7 @@ import sqlite3
 from typing import List
 
 from ..backup import open_sqlite_ro
-from ..utils import convert_mactime, extract_urls
+from ..utils import convert_mactime, extract_urls, extract_urls_from_blob
 from .base import Finding, Module, Severity
 
 
@@ -32,18 +32,28 @@ class SMSModule(Module):
         try:
             try:
                 rows = conn.execute(
-                    "SELECT message.text AS text, message.date AS date, "
-                    "message.is_from_me AS is_from_me, handle.id AS contact "
+                    "SELECT message.text AS text, message.attributedBody AS attributedBody, "
+                    "message.date AS date, message.is_from_me AS is_from_me, handle.id AS contact "
                     "FROM message LEFT JOIN handle ON handle.rowid = message.handle_id;"
                 ).fetchall()
             except sqlite3.OperationalError:
-                rows = conn.execute("SELECT text, date, is_from_me, NULL AS contact FROM message;").fetchall()
+                try:
+                    rows = conn.execute(
+                        "SELECT text, attributedBody, date, is_from_me, NULL AS contact FROM message;"
+                    ).fetchall()
+                except sqlite3.OperationalError:
+                    rows = conn.execute(
+                        "SELECT text, NULL AS attributedBody, date, is_from_me, NULL AS contact FROM message;"
+                    ).fetchall()
 
             scanned = 0
             links = 0
             for r in rows:
                 scanned += 1
-                for url in extract_urls(r["text"]):
+                urls = extract_urls(r["text"])
+                if not urls:  # iOS 16+ stores the body only in attributedBody
+                    urls = extract_urls_from_blob(r["attributedBody"])
+                for url in urls:
                     links += 1
                     ind = self.indicators.match_url(url)
                     if ind:

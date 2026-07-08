@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import os
 import plistlib
+import re
 import sqlite3
 from typing import Dict, Iterator, List, Optional, Tuple
 
@@ -50,10 +51,18 @@ _FS_ARTIFACTS = {
 
 def open_sqlite_ro(path: str) -> sqlite3.Connection:
     """Open a SQLite file strictly read-only (never mutate evidence)."""
-    uri = "file:" + os.path.abspath(path).replace("?", "%3f").replace("#", "%23")
-    conn = sqlite3.connect(f"{uri}?mode=ro&immutable=1", uri=True)
+    # Escape '%' FIRST — SQLite URI filenames percent-decode '%XX', so a path
+    # with a literal percent sequence would otherwise resolve to the wrong file.
+    escaped = os.path.abspath(path).replace("%", "%25").replace("?", "%3f").replace("#", "%23")
+    conn = sqlite3.connect(f"file:{escaped}?mode=ro&immutable=1", uri=True)
     conn.row_factory = sqlite3.Row
     return conn
+
+
+# A backup fileID is the 40-char lowercase-hex SHA1 of "domain-relativePath".
+# Anything else in Manifest.db's fileID column is untrusted and could be a path
+# traversal payload ("../../etc/..."), so we validate before touching the disk.
+_FILEID_RE = re.compile(r"^[0-9a-fA-F]{40}$")
 
 
 class ArtifactError(Exception):
@@ -113,11 +122,15 @@ class BackupTarget(Target):
     def manifest_plist(self) -> dict:
         if self._manifest_plist is None:
             path = os.path.join(self.root, "Manifest.plist")
+            self._manifest_plist = {}
             if os.path.isfile(path):
-                with open(path, "rb") as fh:
-                    self._manifest_plist = plistlib.load(fh)
-            else:
-                self._manifest_plist = {}
+                try:
+                    with open(path, "rb") as fh:
+                        loaded = plistlib.load(fh)
+                    if isinstance(loaded, dict):
+                        self._manifest_plist = loaded
+                except Exception:  # noqa: BLE001 - a corrupt plist must not crash the scan
+                    pass
         return self._manifest_plist
 
     def is_encrypted(self) -> bool:
@@ -141,7 +154,13 @@ class BackupTarget(Target):
             try:
                 conn = open_sqlite_ro(self.manifest_db)
                 for r in conn.execute("SELECT fileID, domain, relativePath FROM Files;"):
-                    rows.append((r["fileID"], r["domain"], r["relativePath"]))
+                    fid = r["fileID"]
+                    # Reject anything that is not a well-formed SHA1 fileID: a
+                    # malicious Manifest.db could otherwise point us at files
+                    # outside the backup (arbitrary local-file read).
+                    if not (isinstance(fid, str) and _FILEID_RE.match(fid)):
+                        continue
+                    rows.append((fid, r["domain"], r["relativePath"]))
                 conn.close()
             except sqlite3.DatabaseError as exc:
                 raise EncryptedBackupError(
@@ -269,6 +288,7 @@ class FilesystemTarget(Target):
 
     def __init__(self, root: str) -> None:
         self.root = root
+        self._real_root = os.path.realpath(root)
 
     @staticmethod
     def looks_like_fs(root: str) -> bool:
@@ -276,10 +296,21 @@ class FilesystemTarget(Target):
             os.path.join(root, "private", "var")
         )
 
+    def _within_root(self, path: str) -> bool:
+        """True if *path* resolves to a location inside the dump (blocks symlink escapes)."""
+        try:
+            real = os.path.realpath(path)
+        except OSError:
+            return False
+        return real == self._real_root or real.startswith(self._real_root + os.sep)
+
+    def _safe_file(self, path: str) -> bool:
+        return os.path.isfile(path) and self._within_root(path)
+
     def locate(self, key: str) -> Optional[str]:
         for rel in _FS_ARTIFACTS.get(key, []):
             p = os.path.join(self.root, rel)
-            if os.path.isfile(p):
+            if self._safe_file(p):
                 return p
         # Safari may live inside per-app containers.
         if key == "safari":
@@ -287,14 +318,17 @@ class FilesystemTarget(Target):
             if os.path.isdir(base):
                 for app in os.listdir(base):
                     cand = os.path.join(base, app, "Library/Safari/History.db")
-                    if os.path.isfile(cand):
+                    if self._safe_file(cand):
                         return cand
         return None
 
     def walk_files(self) -> Iterator[Tuple[str, str]]:
-        for dirpath, _dirs, files in os.walk(self.root):
+        for dirpath, _dirs, files in os.walk(self.root):  # followlinks=False by default
             for name in files:
                 local = os.path.join(dirpath, name)
+                # Skip file symlinks that point outside the extracted tree.
+                if os.path.islink(local) and not self._within_root(local):
+                    continue
                 rel = "/" + os.path.relpath(local, self.root).replace("\\", "/")
                 yield (rel, local)
 

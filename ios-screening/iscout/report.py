@@ -78,9 +78,13 @@ class ScanResult:
             "indicator_count": self.indicator_count,
             "modules_run": self.modules_run,
             "module_errors": self.module_errors,
-            "findings": [f.to_dict() for f in self.findings],
+            "findings": [_sanitize(f.to_dict()) for f in self.findings],
             "disclaimer": "A finding is a lead, not proof. Absence of findings does not "
-            "prove the device is clean. See safety guidance in the report.",
+            "prove the device is clean. See safety guidance below.",
+            # Full safety framing so a consumer that reads ONLY the JSON (e.g.
+            # `--json out.json --quiet`) still gets the safety-critical guidance.
+            "safety": [{"headline": h, "detail": b} for h, b in SAFETY_POINTS],
+            "resources": [{"name": n, "url": u} for n, u in RESOURCES],
         }
 
 
@@ -88,6 +92,23 @@ def _jsonable(v):
     if isinstance(v, (str, int, float, bool)) or v is None:
         return v
     return str(v)
+
+
+def _sanitize(obj):
+    """Recursively coerce a value tree into JSON-serialisable primitives.
+
+    Artifact-derived evidence can contain datetimes (plist <date>) or bytes;
+    left raw these would crash json.dump after an otherwise successful scan.
+    """
+    if isinstance(obj, dict):
+        return {str(k): _sanitize(v) for k, v in obj.items()}
+    if isinstance(obj, (list, tuple)):
+        return [_sanitize(v) for v in obj]
+    if isinstance(obj, (bytes, bytearray)):
+        import base64
+
+        return "base64:" + base64.b64encode(bytes(obj)).decode("ascii")
+    return _jsonable(obj)
 
 
 # --- console -----------------------------------------------------------------
@@ -169,7 +190,8 @@ def render_console(result: ScanResult, verbose: bool = False) -> None:
 
 def write_json(result: ScanResult, path: str) -> None:
     with open(path, "w", encoding="utf-8") as fh:
-        json.dump(result.to_dict(), fh, indent=2, ensure_ascii=False)
+        # default=str is a final safety net for any value _sanitize missed.
+        json.dump(result.to_dict(), fh, indent=2, ensure_ascii=False, default=str)
 
 
 # --- HTML --------------------------------------------------------------------

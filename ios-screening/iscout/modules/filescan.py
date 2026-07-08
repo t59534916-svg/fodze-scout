@@ -46,16 +46,17 @@ class FileScanModule(Module):
                     )
 
             if want_hashes and os.path.isfile(local_path):
-                digest = self._hash(local_path)
-                if digest:
+                digests = self._hashes(local_path)
+                for algo, digest in digests.items():
                     hit = self.indicators.match_hash(digest)
                     if hit:
                         self.add_ioc_finding(
                             hit,
                             title=f"File hash matches indicator: {device_path}",
                             artifact=device_path,
-                            evidence={"path": device_path, "sha256": digest},
+                            evidence={"path": device_path, algo: digest},
                         )
+                        break
 
         if jailbreak_hits:
             self.add(
@@ -80,14 +81,17 @@ class FileScanModule(Module):
         return self.findings
 
     @staticmethod
-    def _hash(path: str) -> str:
+    def _hashes(path: str) -> dict:
+        """Return {md5, sha1, sha256} hex digests, computed in a single read."""
         try:
             if os.path.getsize(path) > _MAX_HASH_BYTES:
-                return ""
-            h = hashlib.sha256()
+                return {}
+            md5, sha1, sha256 = hashlib.md5(), hashlib.sha1(), hashlib.sha256()
             with open(path, "rb") as fh:
                 for chunk in iter(lambda: fh.read(1024 * 1024), b""):
-                    h.update(chunk)
-            return h.hexdigest()
+                    md5.update(chunk)
+                    sha1.update(chunk)
+                    sha256.update(chunk)
+            return {"md5": md5.hexdigest(), "sha1": sha1.hexdigest(), "sha256": sha256.hexdigest()}
         except OSError:
-            return ""
+            return {}

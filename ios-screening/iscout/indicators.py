@@ -148,34 +148,39 @@ class Indicators:
         return count
 
     def load_stix2_obj(self, bundle: dict, feed: str) -> int:
+        # STIX2 patterns carry no confidence field. Derive the category from the
+        # feed name and default the confidence per indicator type: precise types
+        # (domain/process/hash/…) are trusted as high; the SUBSTRING-matched
+        # loose types (url, file_path) default to medium so a broad external
+        # value cannot escalate straight to DETECTED.
+        category = CATEGORY_STALKERWARE if "stalker" in feed.lower() else CATEGORY_MERCENARY
         count = 0
         for obj in bundle.get("objects", []):
             if obj.get("type") != "indicator":
                 continue
             pattern = obj.get("pattern", "")
-            family = ""
             labels = obj.get("labels") or []
-            if labels:
-                family = ",".join(labels)
+            family = obj.get("name") or (",".join(labels) if labels else "")
             for lhs, val in _STIX_PATTERN_RE.findall(pattern):
                 key = lhs.replace("'", "").lower()
                 itype = _STIX_TYPE_MAP.get(key)
                 if not itype:
                     continue
+                confidence = "medium" if itype in ("url", "file_path") else "high"
                 self.add(
                     Indicator(
                         type=itype,
                         value=val,
-                        confidence="high",
-                        malware_family=obj.get("name", family),
-                        category=CATEGORY_MERCENARY,
+                        confidence=confidence,
+                        malware_family=family,
+                        category=category,
                         source=f"STIX2:{feed}",
                         feed=feed,
                         description=obj.get("description", ""),
                     )
                 )
                 count += 1
-        self.feeds[feed] = {"source": f"STIX2 {feed}", "count": count, "category": CATEGORY_MERCENARY}
+        self.feeds[feed] = {"source": f"STIX2 {feed}", "count": count, "category": category}
         return count
 
     def load_builtin(self, data_dir: Optional[str] = None) -> int:
@@ -220,15 +225,17 @@ class Indicators:
     def match_url(self, url: Optional[str]) -> Optional[Indicator]:
         if not url:
             return None
-        hit = self.match_domain(url_host(url))
+        host = url_host(url)
+        hit = self.match_domain(host)
         if hit:
             return hit
-        low = url.lower()
+        # url-type indicators: anchor on the host (suffix) and, when the
+        # indicator carries a path, require it to be a path prefix — never a raw
+        # unanchored substring (which over-matches query params / nested URLs).
         for ind in self.urls:
-            if ind.value.lower() in low:
+            if _url_indicator_matches(ind.value, url, host):
                 return ind
         # Bare-IP hosts
-        host = url_host(url)
         if host and host in self.ips:
             return self.ips[host]
         return None
@@ -262,7 +269,7 @@ class Indicators:
         if hit:
             return hit
         for ind in self.file_paths:
-            if ind.value.lower().replace("\\", "/") in low:
+            if _path_contains(low, ind.value.lower().replace("\\", "/")):
                 return ind
         return None
 
@@ -276,3 +283,34 @@ class Indicators:
 
         c = Counter(i.type for i in self.all)
         return dict(c)
+
+
+def _path_contains(path: str, value: str) -> bool:
+    """Segment-boundary containment: '/var/jb' matches '/private/var/jb' but not
+    '/private/var/jbGameCache'. Avoids substring over-matching of short paths."""
+    p = "/" + path.strip("/") + "/"
+    v = "/" + value.strip("/") + "/"
+    return v in p
+
+
+def _url_indicator_matches(indicator_value: str, url: str, url_host_value: Optional[str]) -> bool:
+    """A url-type indicator matches only when its host suffix-matches the target
+    host AND (if it carries a path) that path is a prefix of the target's path."""
+    ind_host = url_host(indicator_value)
+    if not ind_host or not url_host_value:
+        return False
+    if not (url_host_value == ind_host or url_host_value.endswith("." + ind_host)):
+        return False
+    ind_path = _url_path(indicator_value)
+    if not ind_path or ind_path == "/":
+        return True
+    return _url_path(url).startswith(ind_path)
+
+
+def _url_path(url: str) -> str:
+    s = re.sub(r"^[a-zA-Z][a-zA-Z0-9+.\-]*://", "", url.strip())
+    s = s.split("@")[-1]  # strip userinfo
+    slash = s.find("/")
+    if slash == -1:
+        return "/"
+    return s[slash:].split("?", 1)[0].split("#", 1)[0].lower()

@@ -68,11 +68,13 @@ def cmd_scan(args) -> int:
         echo(
             "Decrypt it first, then scan the decrypted copy. For example:\n"
             "    pip install mvt\n"
-            "    mvt-ios decrypt-backup -p '<backup password>' -d ./decrypted "
+            "    mvt-ios decrypt-backup -d ./decrypted "
             f"{args.target}\n"
             "    iscout scan ./decrypted\n"
-            "(An encrypted backup is REQUIRED for full coverage — it contains SMS,\n"
-            "Safari history and more that unencrypted backups omit.)"
+            "(Omit the password flag so mvt prompts interactively — avoid passing the\n"
+            "backup password on the command line, where it lands in shell history and\n"
+            "the process list. An encrypted backup is REQUIRED for full coverage — it\n"
+            "contains SMS, Safari history and more that unencrypted backups omit.)"
         )
         return 3
 
@@ -103,13 +105,19 @@ def cmd_scan(args) -> int:
         render_console(result, verbose=args.verbose)
 
     if args.json:
-        os.makedirs(os.path.dirname(os.path.abspath(args.json)), exist_ok=True)
-        write_json(result, args.json)
-        echo(color(f"  JSON report written to {args.json}", "grey"))
+        try:
+            os.makedirs(os.path.dirname(os.path.abspath(args.json)), exist_ok=True)
+            write_json(result, args.json)
+            echo(color(f"  JSON report written to {args.json}", "grey"))
+        except OSError as exc:
+            echo(color(f"  warning: could not write JSON report: {exc}", "yellow"))
     if args.html:
-        os.makedirs(os.path.dirname(os.path.abspath(args.html)), exist_ok=True)
-        write_html(result, args.html)
-        echo(color(f"  HTML report written to {args.html}", "grey"))
+        try:
+            os.makedirs(os.path.dirname(os.path.abspath(args.html)), exist_ok=True)
+            write_html(result, args.html)
+            echo(color(f"  HTML report written to {args.html}", "grey"))
+        except OSError as exc:
+            echo(color(f"  warning: could not write HTML report: {exc}", "yellow"))
 
     counts = result.counts()
     if args.fail_on_detected and counts["DETECTED"]:

@@ -56,6 +56,23 @@ def extract_urls(text: Optional[str]) -> List[str]:
     return out
 
 
+def extract_urls_from_blob(blob) -> List[str]:
+    """Extract URL-like substrings from a raw binary blob (e.g. ``attributedBody``).
+
+    Modern iOS often stores the message body only in the ``attributedBody``
+    NSKeyedArchiver/typedstream blob with ``text`` NULL. Fully decoding that
+    format is heavy; URLs appear as plaintext runs inside it, so a lenient
+    decode + the normal URL regex recovers them reliably.
+    """
+    if not blob:
+        return []
+    if isinstance(blob, (bytes, bytearray)):
+        text = bytes(blob).decode("utf-8", "ignore")
+    else:
+        text = str(blob)
+    return extract_urls(text)
+
+
 def url_host(url: str) -> Optional[str]:
     """Extract the lower-cased host (no port) from a URL or bare host string."""
     if not url:

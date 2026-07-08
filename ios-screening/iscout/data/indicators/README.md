@@ -52,6 +52,12 @@ Supported STIX2 pattern types: `domain-name:value`, `url:value`, `process:name`,
 `app:id`, `configuration-profile:id`, `email-addr:value`, `file:name`,
 `file:path`, `ipv4-addr:value`, `file:hashes.{md5,sha-1,sha-256}`.
 
+STIX2 patterns carry no confidence field, so iScout assigns one by type: precise
+types (domain, process, hash, …) are treated as **high** (→ DETECTED), while the
+substring-matched loose types (`url:value`, `file:path`) default to **medium**
+(→ WARNING) so a broad external value cannot escalate straight to DETECTED. The
+category is taken from the feed name (`*stalker*` → stalkerware, else mercenary).
+
 ## Adding your own indicators
 
 Create a JSON file in the iScout curated format:

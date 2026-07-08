@@ -56,17 +56,20 @@ class NetworkUsageModule(Module):
                 r[0] for r in conn.execute("SELECT Z_PK FROM ZPROCESS;") if r[0] is not None
             }
 
-            # Inventory processes and match indicators.
+            # Inventory processes and match indicators. Build the column list
+            # from the actual schema — timestamp columns vary across iOS versions.
+            first_col = "ZFIRSTTIMESTAMP" if "ZFIRSTTIMESTAMP" in proc_cols else "NULL AS ZFIRSTTIMESTAMP"
+            last_col = "ZTIMESTAMP" if "ZTIMESTAMP" in proc_cols else "NULL AS ZTIMESTAMP"
+            proc_sql = f"SELECT Z_PK, ZPROCNAME, ZBUNDLENAME, {first_col}, {last_col} FROM ZPROCESS;"
+
             hits = 0
-            for row in conn.execute(
-                "SELECT Z_PK, ZPROCNAME, ZBUNDLENAME, ZFIRSTTIMESTAMP, ZTIMESTAMP FROM ZPROCESS;"
-            ):
+            for row in conn.execute(proc_sql):
                 pk, procname, bundle, first_ts, last_ts = (
                     row["Z_PK"],
                     row["ZPROCNAME"],
                     row["ZBUNDLENAME"],
-                    row["ZFIRSTTIMESTAMP"] if "ZFIRSTTIMESTAMP" in proc_cols else None,
-                    row["ZTIMESTAMP"] if "ZTIMESTAMP" in proc_cols else None,
+                    row["ZFIRSTTIMESTAMP"],
+                    row["ZTIMESTAMP"],
                 )
                 ts = convert_mactime(first_ts) or convert_mactime(last_ts)
                 ind = self.indicators.match_process(procname) or self.indicators.match_app_id(bundle)
