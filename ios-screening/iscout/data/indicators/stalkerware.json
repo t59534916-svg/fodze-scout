@@ -1,0 +1,30 @@
+{
+  "feed": "stalkerware",
+  "category": "stalkerware",
+  "source": "Echap/AssoEchap stalkerware-indicators (network.csv); TechCrunch & Certo investigations",
+  "reference": "https://github.com/AssoEchap/stalkerware-indicators",
+  "note": "Most consumer stalkerware on iPhone works via stolen iCloud credentials (NO app on the device) or on a JAILBROKEN device — so the practical signals are account/behaviour and jailbreak/profile checks, not bundle IDs. No reliable public iOS bundle IDs exist for these products. Domains below are shared exfil infrastructure (often Android-centric); primary vendor domains are 'high', obscure/short hosts 'low' (may be stale/sinkholed). Validate against the live Echap network.csv before operational blocking.",
+  "indicators": [
+    {"type": "domain", "value": "flexispy.com", "confidence": "high", "malware_family": "FlexiSpy", "description": "FlexiSpy vendor/exfil domain."},
+    {"type": "domain", "value": "ios.mflx.biz", "confidence": "high", "malware_family": "FlexiSpy", "description": "FlexiSpy Cydia repository host added on a jailbroken iPhone during install — the single most concrete on-device iOS stalkerware network artifact."},
+    {"type": "domain", "value": "api.flexispy.com", "confidence": "medium", "malware_family": "FlexiSpy", "description": "FlexiSpy API host."},
+    {"type": "domain", "value": "mobilefonex.com", "confidence": "medium", "malware_family": "FlexiSpy", "description": "FlexiSpy-associated host."},
+    {"type": "domain", "value": "hoverwatch.com", "confidence": "medium", "malware_family": "Hoverwatch", "description": "Hoverwatch vendor/exfil domain."},
+    {"type": "domain", "value": "mspyonline.com", "confidence": "medium", "malware_family": "mSpy", "description": "mSpy-associated host."},
+    {"type": "domain", "value": "copy9.com", "confidence": "medium", "malware_family": "TheTruthSpy / Copy9 network", "description": "Shared JFramework/Jexpa infrastructure (mostly Android)."},
+    {"type": "domain", "value": "mxspy.com", "confidence": "medium", "malware_family": "MxSpy (TheTruthSpy network)", "description": "Shared TheTruthSpy infrastructure."},
+    {"type": "domain", "value": "guestspy.com", "confidence": "medium", "malware_family": "GuestSpy (TheTruthSpy network)", "description": "Shared TheTruthSpy infrastructure."},
+    {"type": "domain", "value": "spyic.com", "confidence": "medium", "malware_family": "Spyic (Cocospy/Spyic/Spyzie family)", "description": "Clone-family exfil domain."},
+    {"type": "domain", "value": "spyzie.com", "confidence": "medium", "malware_family": "Spyzie (Cocospy/Spyic/Spyzie family)", "description": "Clone-family exfil domain."},
+    {"type": "domain", "value": "us.umobix.com", "confidence": "medium", "malware_family": "uMobix", "description": "uMobix exfil host."},
+    {"type": "domain", "value": "android-api.umobix.com", "confidence": "medium", "malware_family": "uMobix", "description": "uMobix API host (Android-named, shared infra)."},
+    {"type": "domain", "value": "djp.bz", "confidence": "low", "malware_family": "FlexiSpy", "description": "Short host from Echap network.csv — possibly stale/sinkholed; verify before use."},
+    {"type": "domain", "value": "thd.cc", "confidence": "low", "malware_family": "mSpy", "description": "Short host from Echap network.csv — possibly stale/sinkholed; verify before use."},
+    {"type": "domain", "value": "minspy.com", "confidence": "low", "malware_family": "Cocospy/Spyic clone family", "description": "Clone-family host; low confidence."},
+    {"type": "domain", "value": "neatspy.com", "confidence": "low", "malware_family": "Cocospy/Spyic clone family", "description": "Clone-family host; low confidence."},
+    {"type": "domain", "value": "safespy.com", "confidence": "low", "malware_family": "Cocospy/Spyic clone family", "description": "Clone-family host; low confidence."},
+    {"type": "domain", "value": "spyine.com", "confidence": "low", "malware_family": "Cocospy/Spyic clone family", "description": "Clone-family host; low confidence."},
+    {"type": "app_name", "value": "Phone Monitor", "confidence": "low", "malware_family": "FlexiSpy (jailbroken iOS)", "description": "Hidden home-screen display name reported by Certo — a weak lead, NOT a verified identifier."},
+    {"type": "app_name", "value": "System Core", "confidence": "low", "malware_family": "FlexiSpy (jailbroken iOS)", "description": "Hidden home-screen display name reported by Certo — a weak lead, NOT a verified identifier."}
+  ]
+}

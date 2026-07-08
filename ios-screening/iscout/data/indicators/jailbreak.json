@@ -1,0 +1,21 @@
+{
+  "feed": "jailbreak",
+  "category": "jailbreak",
+  "source": "TheAppleWiki, MVT, and reputable iOS-security references",
+  "reference": "https://theapplewiki.com/wiki/Jailbreak",
+  "note": "Jailbreak artifacts are only present in a full filesystem dump, not a normal iTunes/Finder backup. Jailbreaking is not itself malware, but it is a prerequisite for most on-device iOS stalkerware and disables key protections — hence WARNING, never DETECTED. Rootless jailbreaks (palera1n/Dopamine, iOS 15+) relocate everything under /var/jb, so top-level path checks can miss them.",
+  "indicators": [
+    {"type": "file_path", "value": "/Applications/Cydia.app", "confidence": "high", "malware_family": "Jailbreak (Cydia)", "description": "Cydia package manager — classic jailbreak indicator."},
+    {"type": "file_path", "value": "/Applications/Sileo.app", "confidence": "high", "malware_family": "Jailbreak (Sileo)", "description": "Sileo package manager — modern jailbreak indicator."},
+    {"type": "file_path", "value": "/private/var/lib/apt", "confidence": "high", "malware_family": "Jailbreak (APT)", "description": "APT package database installed by jailbreaks."},
+    {"type": "file_path", "value": "/private/var/lib/cydia", "confidence": "high", "malware_family": "Jailbreak (Cydia)", "description": "Cydia state directory."},
+    {"type": "file_path", "value": "/Library/MobileSubstrate/MobileSubstrate.dylib", "confidence": "high", "malware_family": "Jailbreak (MobileSubstrate)", "description": "Code-injection framework used by tweaks/spyware."},
+    {"type": "file_path", "value": "/usr/lib/TweakInject", "confidence": "medium", "malware_family": "Jailbreak (tweak injection)", "description": "Tweak injection directory."},
+    {"type": "file_path", "value": "/etc/apt/sources.list.d/sileo.sources", "confidence": "high", "malware_family": "Jailbreak (Sileo)", "description": "Sileo repository source list."},
+    {"type": "file_path", "value": "/var/jb", "confidence": "high", "malware_family": "Jailbreak (rootless)", "description": "Rootless jailbreak (palera1n/Dopamine) install root."},
+    {"type": "file_path", "value": "/.bootstrapped", "confidence": "medium", "malware_family": "Jailbreak (bootstrap)", "description": "Bootstrap marker left by some jailbreaks."},
+    {"type": "file_path", "value": "/.installed_unc0ver", "confidence": "medium", "malware_family": "Jailbreak (unc0ver)", "description": "unc0ver jailbreak marker."},
+    {"type": "file_path", "value": "/var/checkra1n.dmg", "confidence": "medium", "malware_family": "Jailbreak (checkra1n)", "description": "checkra1n artifact."},
+    {"type": "file_path", "value": "/private/var/lib/undecimus", "confidence": "medium", "malware_family": "Jailbreak (unc0ver)", "description": "unc0ver state directory."}
+  ]
+}

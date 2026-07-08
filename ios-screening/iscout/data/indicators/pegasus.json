@@ -1,0 +1,25 @@
+{
+  "feed": "pegasus",
+  "category": "mercenary",
+  "source": "Amnesty International Security Lab — Forensic Methodology Report: How to catch NSO Group's Pegasus (2021)",
+  "reference": "https://securitylab.amnesty.org/latest/2021/07/forensic-methodology-report-how-to-catch-nso-groups-pegasus/",
+  "note": "Starter subset only. For a real investigation load Amnesty's full pegasus.stix2 (~700+ domains, more processes/emails) via --iocs or ISCOUT_STIX2/MVT_STIX2. Pegasus rotates process names, so absence of these does NOT rule out infection.",
+  "indicators": [
+    {"type": "process_name", "value": "bh", "confidence": "high", "malware_family": "NSO Pegasus", "description": "First-stage 'BridgeHead' payload observed in DataUsage after visits to Pegasus install domains."},
+    {"type": "process_name", "value": "roleaboutd", "confidence": "high", "malware_family": "NSO Pegasus", "description": "Later-stage Pegasus process loaded post-exploitation."},
+    {"type": "process_name", "value": "msgacntd", "confidence": "high", "malware_family": "NSO Pegasus", "description": "Later-stage Pegasus process loaded post-exploitation."},
+    {"type": "process_name", "value": "stagingd", "confidence": "high", "malware_family": "NSO Pegasus", "description": "Pegasus staging process."},
+    {"type": "process_name", "value": "rolexd", "confidence": "high", "malware_family": "NSO Pegasus", "description": "Executed from /private/var/db/com.apple.xpc.roleaccountd.staging/."},
+    {"type": "process_name", "value": "launchafd", "confidence": "high", "malware_family": "NSO Pegasus", "description": "Pegasus process name (spoofs a system daemon)."},
+    {"type": "process_name", "value": "pcsd", "confidence": "high", "malware_family": "NSO Pegasus", "description": "Pegasus process name listed in the Amnesty report appendix."},
+    {"type": "process_name", "value": "fmld", "confidence": "high", "malware_family": "NSO Pegasus", "description": "Pegasus process name listed in the Amnesty report appendix."},
+    {"type": "process_name", "value": "ckkeyrollfd", "confidence": "high", "malware_family": "NSO Pegasus", "description": "Pegasus process name (spoofs iOS keyroll daemon naming)."},
+    {"type": "process_name", "value": "gatekeeperd", "confidence": "high", "malware_family": "NSO Pegasus", "description": "Pegasus process name masquerading as a system service."},
+    {"type": "process_name", "value": "nehelprd", "confidence": "high", "malware_family": "NSO Pegasus", "description": "Pegasus process name listed in the Amnesty report appendix."},
+    {"type": "process_name", "value": "otpgrefd", "confidence": "high", "malware_family": "NSO Pegasus", "description": "Pegasus process name listed in the Amnesty report appendix."},
+    {"type": "domain", "value": "free247downloads.com", "confidence": "high", "malware_family": "NSO Pegasus", "description": "Pegasus V4 exploitation/installation domain published by Amnesty."},
+    {"type": "domain", "value": "urlpush.net", "confidence": "high", "malware_family": "NSO Pegasus", "description": "Pegasus infrastructure domain published by Amnesty."},
+    {"type": "domain", "value": "opposedarrangement.net", "confidence": "high", "malware_family": "NSO Pegasus", "description": "Pegasus infrastructure domain published by Amnesty."},
+    {"type": "file_path", "value": "/private/var/db/com.apple.xpc.roleaccountd.staging", "confidence": "high", "malware_family": "NSO Pegasus", "description": "Pegasus staging directory holding malicious binaries (not present on clean devices)."}
+  ]
+}

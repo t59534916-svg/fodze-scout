@@ -1,0 +1,40 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "iscout"
+version = "0.1.0"
+description = "iScout — forensic screening tool for iPhone/iPad backups to surface spyware, stalkerware and covert monitoring"
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+authors = [{ name = "FODZE Scout" }]
+keywords = ["ios", "iphone", "forensics", "spyware", "stalkerware", "pegasus", "mvt", "dfir"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Topic :: Security",
+    "Topic :: System :: Monitoring",
+    "Intended Audience :: Information Technology",
+]
+# Zero required third-party dependencies: the core engine uses only the Python
+# standard library (sqlite3, plistlib, hashlib, json). This keeps the tool easy
+# to audit and to run in restricted/offline forensic environments.
+dependencies = []
+
+[project.optional-dependencies]
+# Optional: richer YAML indicator feeds and colour. Not required.
+extras = ["pyyaml>=6.0"]
+dev = ["pytest>=7.0"]
+
+[project.scripts]
+iscout = "iscout.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/t59534916-svg/fodze-scout"
+
+[tool.setuptools]
+packages = ["iscout", "iscout.modules"]
+
+[tool.setuptools.package-data]
+iscout = ["data/indicators/*.json", "data/*.html"]
