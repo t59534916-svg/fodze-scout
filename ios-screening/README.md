@@ -52,39 +52,63 @@ pip install -e .          # provides the `iscout` command
 python -m iscout --help
 ```
 
-## Quick start
+## Scan a real iPhone — step by step
 
-### 1. Make a backup of the iPhone
+### 1. Make an encrypted backup
 
-On a computer, create an **encrypted** local backup (Finder on macOS, or Apple
-Devices / iTunes on Windows). *Encrypted* is important — it includes SMS, Safari
-history and call data that unencrypted backups omit.
+Connect the iPhone to a computer and create an **encrypted** local backup:
 
-### 2. Decrypt it
+- **macOS:** Finder → select the iPhone → *Back up all the data…* → tick
+  **Encrypt local backup**, set a password.
+- **Windows:** the *Apple Devices* app (or iTunes) → **Encrypt local backup**.
 
-iScout reads a **decrypted** backup. Decrypt with MVT:
+*Encrypted* matters — it includes SMS, Safari history and call data that
+unencrypted backups omit. Remember the password.
+
+### 2. Find the backup
+
+```bash
+iscout list-backups
+```
+
+This lists every backup in the standard locations with device name, iOS version,
+date and whether it's encrypted — no need to hunt for the cryptic UDID folder.
+(Point at a custom location with `--root DIR`.)
+
+### 3. Check it's ready
+
+```bash
+iscout doctor "<path from step 2>"
+```
+
+Tells you the input type, whether it's encrypted, which artifacts are present,
+and the exact next command.
+
+### 4. (Recommended) load the full public indicators
 
 ```bash
 pip install mvt
-mvt-ios decrypt-backup -p '<backup password>' -d ./decrypted "<path to backup>"
-```
-
-(If you point iScout at an encrypted backup it stops and tells you this.)
-
-### 3. Load the full public indicators (recommended)
-
-```bash
 mvt-ios download-iocs          # fetches pegasus.stix2, cytrox.stix2 (Predator), …
 export ISCOUT_STIX2="$HOME/.local/share/mvt/indicators"   # or pass --iocs
 ```
 
-### 4. Scan
+### 5. Scan
 
 ```bash
-iscout scan ./decrypted -v
-iscout scan ./decrypted --html report.html --json report.json
-iscout scan ./fsdump --type fs          # jailbroken full-filesystem dump / sysdiagnose
+# Encrypted backup — decrypt (mvt prompts for the password) and scan in one step:
+iscout scan "<backup path>" --decrypt --work ./decrypted --html report.html
+
+# Already-decrypted backup, or an unencrypted one:
+iscout scan ./decrypted -v --html report.html --json report.json
+
+# Jailbroken full-filesystem dump / sysdiagnose:
+iscout scan ./fsdump --type fs
 ```
+
+With `--decrypt`, iScout runs `mvt-ios decrypt-backup` for you and never handles
+the password itself (mvt prompts). Prefer that over passing the password on the
+command line. To automate, put the password in an env var and use
+`--password-env VAR`.
 
 ## What it checks
 
@@ -115,7 +139,9 @@ or `ISCOUT_STIX2`/`MVT_STIX2`. See
 [`iscout/data/indicators/README.md`](iscout/data/indicators/README.md).
 
 ```bash
-iscout list-iocs        # what's loaded, by feed and type
+iscout list-backups     # find iPhone backups on this computer
+iscout doctor <path>    # is a target ready to scan, and what to do next
+iscout list-iocs        # what indicators are loaded, by feed and type
 iscout list-modules     # available detection modules
 ```
 
@@ -147,7 +173,8 @@ PYTHONPATH=. python -m pytest -q
   profiles). iScout complements — it does not replace — those checks.
 - No verified public **iOS bundle IDs** exist for consumer stalkerware, so that
   indicator type is supported but intentionally empty.
-- iScout does not (yet) decrypt backups itself — decrypt with MVT first.
+- iScout does not implement backup **crypto** itself — `--decrypt` drives the
+  well-tested `mvt-ios decrypt-backup` (install with `pip install mvt`).
 - This is a **triage funnel into human review**, not a standalone oracle.
 
 ## License

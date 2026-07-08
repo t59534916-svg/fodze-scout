@@ -10,5 +10,5 @@ A finding is always a *lead that warrants further investigation*, never a verdic
 See ``iscout.report`` for the safety framing that every report carries.
 """
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 __all__ = ["__version__"]

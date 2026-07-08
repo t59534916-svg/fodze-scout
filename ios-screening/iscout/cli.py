@@ -13,6 +13,7 @@ from .console import color, echo, set_enabled
 from .engine import run_scan
 from .indicators import Indicators
 from .modules import ALL_MODULES, MODULES_BY_NAME
+from .prep import decrypt_backup, diagnose, discover_backups
 from .report import render_console, write_html, write_json
 
 _EPILOG = """\
@@ -62,21 +63,31 @@ def cmd_scan(args) -> int:
         echo(color(f"error: {exc}", "red"))
         return 2
 
-    # Guard against encrypted backups up front — with actionable guidance.
+    # Encrypted backups: either decrypt them (--decrypt) or stop with guidance.
     if isinstance(target, BackupTarget) and target.is_encrypted():
-        echo(color("error: this backup is ENCRYPTED and cannot be read directly.", "red", "bold"))
-        echo(
-            "Decrypt it first, then scan the decrypted copy. For example:\n"
-            "    pip install mvt\n"
-            "    mvt-ios decrypt-backup -d ./decrypted "
-            f"{args.target}\n"
-            "    iscout scan ./decrypted\n"
-            "(Omit the password flag so mvt prompts interactively — avoid passing the\n"
-            "backup password on the command line, where it lands in shell history and\n"
-            "the process list. An encrypted backup is REQUIRED for full coverage — it\n"
-            "contains SMS, Safari history and more that unencrypted backups omit.)"
-        )
-        return 3
+        if args.decrypt:
+            work = args.work or (os.path.abspath(args.target.rstrip("/\\")) + "-decrypted")
+            password = os.environ.get(args.password_env) if args.password_env else None
+            echo(color(f"  decrypting backup into {work} …", "cyan"))
+            ok, msg = decrypt_backup(args.target, work, password=password)
+            echo(color(f"  {msg}", "grey" if ok else "red"))
+            if not ok:
+                return 3
+            target = open_target(work, kind="backup")
+        else:
+            echo(color("error: this backup is ENCRYPTED and cannot be read directly.", "red", "bold"))
+            echo(
+                "Decrypt and scan in one step (recommended):\n"
+                "    pip install mvt\n"
+                f"    iscout scan {args.target} --decrypt --work ./decrypted\n"
+                "  (mvt prompts for the backup password; iScout never handles the secret.)\n"
+                "Or decrypt manually, then scan the decrypted copy:\n"
+                f"    mvt-ios decrypt-backup -d ./decrypted {args.target}\n"
+                "    iscout scan ./decrypted\n"
+                "An encrypted backup is REQUIRED for full coverage — it contains SMS,\n"
+                "Safari history and more that unencrypted backups omit."
+            )
+            return 3
 
     ind = _load_indicators(args)
     if not ind.all:
@@ -125,6 +136,61 @@ def cmd_scan(args) -> int:
     return 0
 
 
+def cmd_list_backups(args) -> int:
+    if getattr(args, "no_color", False):
+        set_enabled(False)
+    roots = None
+    if args.root:
+        roots = args.root
+    backups = discover_backups(roots)
+    if not backups:
+        echo(color("No iPhone backups found in the standard locations.", "yellow"))
+        echo(color("  macOS:   ~/Library/Application Support/MobileSync/Backup/", "grey"))
+        echo(color("  Windows: %APPDATA%\\Apple*\\MobileSync\\Backup  or  %USERPROFILE%\\Apple\\MobileSync\\Backup", "grey"))
+        echo(color("  Pass --root DIR to search a custom location.", "grey"))
+        return 0
+    echo(color(f"Found {len(backups)} backup(s):", "bold"))
+    for b in backups:
+        lock = color("🔒 encrypted", "yellow") if b["encrypted"] else color("🔓 unencrypted", "grey")
+        name = b.get("device_name") or b.get("product_type") or "unknown device"
+        echo(f"\n  {color(str(name), 'cyan', 'bold')}   {lock}")
+        echo(color(f"    iOS {b.get('product_version') or '?'} · {b.get('product_type') or '?'} · last backup {b.get('last_backup') or '?'}", "grey"))
+        echo(color(f"    {b['path']}", "grey"))
+        if b["encrypted"]:
+            echo(color(f"    → iscout scan {b['path']} --decrypt --work ./decrypted", "grey"))
+        else:
+            echo(color(f"    → iscout scan {b['path']} -v", "grey"))
+    return 0
+
+
+def cmd_doctor(args) -> int:
+    if getattr(args, "no_color", False):
+        set_enabled(False)
+    d = diagnose(args.target, kind=args.type)
+    echo(color(f"iScout preflight — {args.target}", "bold", "cyan"))
+    if d["error"]:
+        echo(color(f"  ✗ {d['error']}", "red"))
+    else:
+        echo(color(f"  input type: {d['kind']}", "grey"))
+        if d["device"]:
+            dev = d["device"]
+            echo(color(f"  device: {dev.get('Product Type','?')} · iOS {dev.get('Product Version','?')}", "grey"))
+        if d["encrypted"]:
+            echo(color("  🔒 encrypted backup", "yellow"))
+        if d["artifacts"]:
+            echo(color("  artifacts:", "grey"))
+            for key, present in d["artifacts"].items():
+                mark = color("✓", "green") if present else color("·", "grey")
+                echo(f"      {mark} {key}")
+        if d["profiles"] is not None:
+            echo(color(f"      configuration profiles: {d['profiles']}", "grey"))
+    verdict = color("READY to scan", "green", "bold") if d["ready"] else color("NOT ready", "yellow", "bold")
+    echo(f"\n  {verdict}")
+    for step in d["next_steps"]:
+        echo(color(f"  {step}", "grey"))
+    return 0 if d["ready"] else 3
+
+
 def cmd_list_modules(args) -> int:
     echo(color("Available detection modules:", "bold"))
     for m in ALL_MODULES:
@@ -171,6 +237,11 @@ def build_parser() -> argparse.ArgumentParser:
     sp.add_argument("--modules", nargs="+", metavar="NAME", help="only run these modules")
     sp.add_argument("--json", metavar="FILE", help="write a JSON report")
     sp.add_argument("--html", metavar="FILE", help="write an HTML report")
+    sp.add_argument("--decrypt", action="store_true",
+                    help="if the backup is encrypted, decrypt it first with mvt-ios (prompts for password)")
+    sp.add_argument("--work", metavar="DIR", help="destination for the decrypted copy (with --decrypt)")
+    sp.add_argument("--password-env", metavar="VAR",
+                    help="read the backup password from this env var instead of prompting (with --decrypt)")
     sp.add_argument("--redact", action="store_true", help="mask serial/IMEI/phone number in output")
     sp.add_argument("-v", "--verbose", action="store_true", help="also show INFO findings on the console")
     sp.add_argument("-q", "--quiet", action="store_true", help="suppress the console report (still writes files)")
@@ -178,6 +249,18 @@ def build_parser() -> argparse.ArgumentParser:
     sp.add_argument("--fail-on-detected", action="store_true",
                     help="exit non-zero if any DETECTED finding is present")
     sp.set_defaults(func=cmd_scan)
+
+    lb = sub.add_parser("list-backups", help="find iPhone backups in the standard OS locations")
+    lb.add_argument("--root", metavar="DIR", action="append",
+                    help="also search this backup root (repeatable)")
+    lb.add_argument("--no-color", action="store_true", help="disable ANSI colour")
+    lb.set_defaults(func=cmd_list_backups)
+
+    dc = sub.add_parser("doctor", help="check whether a target is ready to scan and what to do next")
+    dc.add_argument("target", help="path to a backup or filesystem dump")
+    dc.add_argument("--type", choices=["auto", "backup", "fs", "sysdiagnose"], default="auto")
+    dc.add_argument("--no-color", action="store_true", help="disable ANSI colour")
+    dc.set_defaults(func=cmd_doctor)
 
     sub.add_parser("list-modules", help="list detection modules").set_defaults(func=cmd_list_modules)
     sub.add_parser("list-iocs", help="list built-in indicators").set_defaults(func=cmd_list_iocs)
