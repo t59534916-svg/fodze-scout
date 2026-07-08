@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.pytest_cache/
+.venv/
+venv/
+
+# iScout working / evidence output — never commit forensic material
+/out/
+*.iscout.json
+*.iscout.html
+/testdata/
+/evidence/
+
+# CI / demo scratch
+/_ci_*
+/demo-backup/
+/decrypted/

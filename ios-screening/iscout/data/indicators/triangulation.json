@@ -1,0 +1,16 @@
+{
+  "feed": "triangulation",
+  "category": "mercenary",
+  "source": "Kaspersky GReAT / Securelist — Operation Triangulation (2023) and triangle_check",
+  "reference": "https://securelist.com/operation-triangulation/109842/",
+  "note": "The strongest Triangulation signal is the deprecated 'BackupAgent' binary showing WWAN traffic right after an empty SMS-attachment directory is modified — a timeline correlation iScout cannot fully reconstruct from a plain backup, so 'BackupAgent' is scored medium (WARNING) here, not DETECTED.",
+  "indicators": [
+    {"type": "process_name", "value": "BackupAgent", "confidence": "medium", "malware_family": "Operation Triangulation (TriangleDB)", "description": "Deprecated system binary; execution with WWAN data usage is the primary triangle_check signal. Confirm the WWAN/timeline context before treating as compromise."},
+    {"type": "domain", "value": "backuprabbit.com", "confidence": "high", "malware_family": "Operation Triangulation (TriangleDB)", "description": "Initial staging server."},
+    {"type": "domain", "value": "cloudsponcer.com", "confidence": "high", "malware_family": "Operation Triangulation (TriangleDB)", "description": "C2 domain published by Kaspersky."},
+    {"type": "domain", "value": "snoweeanalytics.com", "confidence": "high", "malware_family": "Operation Triangulation (TriangleDB)", "description": "C2 domain published by Kaspersky."},
+    {"type": "domain", "value": "topographyupdates.com", "confidence": "high", "malware_family": "Operation Triangulation (TriangleDB)", "description": "C2 domain published by Kaspersky."},
+    {"type": "domain", "value": "unlimitedteacup.com", "confidence": "high", "malware_family": "Operation Triangulation (TriangleDB)", "description": "C2 domain published by Kaspersky."},
+    {"type": "domain", "value": "virtuallaughing.com", "confidence": "high", "malware_family": "Operation Triangulation (TriangleDB)", "description": "C2 domain published by Kaspersky."}
+  ]
+}

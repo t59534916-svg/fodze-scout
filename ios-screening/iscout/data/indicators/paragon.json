@@ -1,0 +1,10 @@
+{
+  "feed": "paragon",
+  "category": "mercenary",
+  "source": "Citizen Lab — Graphite Caught: First Forensic Confirmation of Paragon's iOS Mercenary Spyware (2025)",
+  "reference": "https://citizenlab.ca/2025/06/first-forensic-confirmation-of-paragons-ios-mercenary-spyware-finding-many-details/",
+  "note": "Citizen Lab's iOS confirmation relied on server-side network fingerprinting and an attacker iMessage account in device logs (delivered via CVE-2025-43200, fixed in iOS 18.3.1) rather than an on-device process name. The single scannable value here is a Graphite server IP; keep iOS updated as the primary defence.",
+  "indicators": [
+    {"type": "ip", "value": "46.183.184.91", "confidence": "high", "malware_family": "Paragon Graphite", "description": "Graphite server matched to Citizen Lab network 'Fingerprint P1'."}
+  ]
+}

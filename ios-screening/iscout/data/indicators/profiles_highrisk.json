@@ -1,0 +1,18 @@
+{
+  "feed": "profiles_highrisk",
+  "category": "profile_rules",
+  "source": "Apple Configuration Profile Reference; MVT ConfigurationProfiles module",
+  "reference": "https://developer.apple.com/documentation/devicemanagement",
+  "note": "These are payload TYPES that warrant review when they appear in an UNRECOGNISED profile. Presence alone is not malicious (employers/carriers use these legitimately); iScout flags the combination of a high-risk payload and an unknown/unexpected organisation for human review.",
+  "payload_types": [
+    {"type": "com.apple.mdm", "risk": "Mobile Device Management — persistent remote administration of the device."},
+    {"type": "com.apple.security.root", "risk": "Installs a root CA certificate — enables HTTPS interception (MITM)."},
+    {"type": "com.apple.security.pem", "risk": "Installs a certificate — can enable HTTPS interception."},
+    {"type": "com.apple.security.pkcs1", "risk": "Installs a certificate — can enable HTTPS interception."},
+    {"type": "com.apple.security.pkcs12", "risk": "Installs a certificate + private key — can enable HTTPS interception."},
+    {"type": "com.apple.vpn.managed", "risk": "Managed VPN — can route and inspect all network traffic."},
+    {"type": "com.apple.vpn.managed.applayer", "risk": "Per-app managed VPN — can route/inspect app traffic."},
+    {"type": "com.apple.webcontent-filter", "risk": "Web content filter — can monitor and redirect browsing (inspect FilterType=Plugin, PluginBundleID, FilterSockets)."},
+    {"type": "com.apple.notificationsettings", "risk": "Overrides notification settings (flagged suspicious by MVT)."}
+  ]
+}

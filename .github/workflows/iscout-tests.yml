@@ -1,0 +1,67 @@
+name: iScout tests
+
+on:
+  push:
+    paths:
+      - "ios-screening/**"
+      - ".github/workflows/iscout-tests.yml"
+  pull_request:
+    paths:
+      - "ios-screening/**"
+      - ".github/workflows/iscout-tests.yml"
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    working-directory: ios-screening
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.9", "3.10", "3.11", "3.12"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install iScout (with dev deps)
+        run: python -m pip install --upgrade pip && pip install -e ".[dev]"
+
+      - name: Byte-compile
+        run: python -m compileall -q iscout samples
+
+      - name: Run tests
+        run: pytest
+
+      - name: CLI smoke test (build a synthetic backup and scan it)
+        run: |
+          python samples/make_test_backup.py ./_ci_demo --infected
+          # An infected demo must yield at least one DETECTED finding.
+          iscout scan ./_ci_demo --fail-on-detected --quiet --json ./_ci_out.json && {
+            echo "expected non-zero exit on DETECTED findings"; exit 1;
+          } || echo "detections surfaced as expected (non-zero exit)"
+          python - <<'PY'
+          import json
+          d = json.load(open("./_ci_out.json"))
+          assert d["summary"]["DETECTED"] >= 1, d["summary"]
+          assert d["safety"] and d["resources"], "safety framing missing"
+          print("smoke OK:", d["summary"])
+          PY
+          # A clean demo must be quiet.
+          python samples/make_test_backup.py ./_ci_clean --clean
+          iscout scan ./_ci_clean --fail-on-detected --quiet
+          echo "clean scan exit=$?"
+
+      - name: Inventory sanity (modules & indicators load)
+        run: |
+          iscout list-modules
+          iscout list-iocs
